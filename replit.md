@@ -168,3 +168,29 @@ Required environment variables:
 - `OPENAI_API_KEY` - OpenAI API authentication
 - `GEMINI_API_KEY` - Google Gemini API authentication
 - `NODE_ENV` - Environment indicator (development/production)
+- `SESSION_SECRET` - Express session secret for cookie signing
+
+## Recent Changes (November 2025)
+
+### Authentication System Updates
+- **bcrypt password hashing**: Replaced insecure Base64 encoding with bcrypt (10 rounds) for secure password storage
+- **Middleware ordering fix**: User-loading middleware now runs before route handlers to ensure req.user is available
+- **Dual registration flows**: Separate `/signup/client` and `/signup/technician` pages with role-specific forms
+- **Extended signup payload**: Technician registration now captures services, yearsExperience, hourlyRate, and bio
+
+### Schema Refactoring
+- **Technician-User linking**: Technicians table now uses mandatory `userId` field (unique, not null) to link to users table
+- **Profile data consolidation**: Personal details (name, phone, city) stored only in users table; professional metadata (services, bio, rates) in technicians table
+- **TechnicianWithUser type**: Merged type for frontend display combining technician + user fields
+
+### Key Files
+- `server/auth.ts` - Passport.js local strategy with bcrypt, session handling
+- `server/storage.ts` - MemStorage with paired user+technician seeding
+- `shared/schema.ts` - Drizzle schemas with insert/select types
+- `client/src/lib/auth.tsx` - Auth context with signupClient, signupTechnician methods
+
+### Recommended Next Steps
+1. Add Zod validation for signup payload (numeric ranges, phone formatting)
+2. Backfill hashed passwords for seeded test accounts
+3. Build remaining 23 screens (10 client, 10 technician, 3 admin)
+4. Implement 40+ REST API endpoints per specification
