@@ -1,0 +1,550 @@
+<identity>
+You are an AI programming assistant acting as the Lead Full-Stack Architect for "AlloBricolage."
+Your mission: Fix the broken technician registration, restore the job-to-booking flow, and ensure the booking modal works flawlessly.
+</identity>
+
+<project_context>
+**Current Critical Issues:**
+1. **DATABASE SCHEMA ERROR:** Technician table not properly registered/created in the database
+2. **DATA FLOW BROKEN:** Job posting → Technician matching → Booking flow is disconnected
+3. **BUILD ERRORS:** Syntax errors preventing compilation (likely in dashboard/history or TechnicianProfile)
+4. **UI BUG:** Booking Modal rendering inline instead of as a proper overlay
+5. **BOOKING FAILURE:** "Immédiat" technicians like Youssef and Karim show as unavailable or booking doesn't submit
+
+**Root Cause Analysis:**
+- The technician table schema may not be properly initialized in `server/storage.ts`
+- The booking flow expects `TechnicianWithUser` but receives incomplete data
+- Modal z-index/positioning CSS is incorrect
+- API endpoint for booking may not be properly linked
+
+**Goal:** Restore full functionality from job posting → technician discovery → successful booking.
+</project_context>
+
+<task_instructions>
+Execute this 5-Step Recovery Plan:
+
+**STEP 1: DATABASE SCHEMA EMERGENCY FIX**
+File: `server/storage.ts`
+
+Action A: Verify the technician table initialization in the constructor
+```typescript
+constructor() {
+  // Ensure this exact sequence:
+  this.db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      name TEXT NOT NULL,
+      phone TEXT,
+      role TEXT NOT NULL CHECK(role IN ('client', 'technician', 'admin')),
+      city TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  this.db.exec(`
+    CREATE TABLE IF NOT EXISTS technicians (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE,
+      role TEXT NOT NULL,
+      rating REAL DEFAULT 0,
+      reviews INTEGER DEFAULT 0,
+      price REAL NOT NULL,
+      image TEXT,
+      tags TEXT,
+      is_pro INTEGER DEFAULT 0,
+      is_promo INTEGER DEFAULT 0,
+      availability TEXT DEFAULT 'Sur RDV',
+      bio TEXT,
+      experience TEXT,
+      certifications TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  this.db.exec(`
+    CREATE TABLE IF NOT EXISTS bookings (
+      id TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL,
+      technician_id TEXT NOT NULL,
+      job_id TEXT,
+      service_type TEXT NOT NULL,
+      scheduled_date TEXT NOT NULL,
+      scheduled_time TEXT NOT NULL,
+      address TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (client_id) REFERENCES users(id),
+      FOREIGN KEY (technician_id) REFERENCES technicians(id),
+      FOREIGN KEY (job_id) REFERENCES jobs(id)
+    )
+  `);
+```
+
+Action B: Add indexes for performance
+```typescript
+this.db.exec(`CREATE INDEX IF NOT EXISTS idx_technicians_user_id ON technicians(user_id)`);
+this.db.exec(`CREATE INDEX IF NOT EXISTS idx_technicians_availability ON technicians(availability)`);
+this.db.exec(`CREATE INDEX IF NOT EXISTS idx_bookings_client ON bookings(client_id)`);
+this.db.exec(`CREATE INDEX IF NOT EXISTS idx_bookings_technician ON bookings(technician_id)`);
+```
+
+Action C: Fix the seed data to properly link users and technicians
+```typescript
+seedDatabase() {
+  // First, clear existing data
+  this.db.exec(`DELETE FROM bookings`);
+  this.db.exec(`DELETE FROM technicians`);
+  this.db.exec(`DELETE FROM users WHERE role = 'technician'`);
+  
+  // Seed technician users
+  const technicianUsers = [
+    { id: 'tech-1', email: 'youssef@example.com', name: 'Youssef Alami', city: 'Casablanca', phone: '+212 6 12 34 56 78' },
+    { id: 'tech-2', email: 'karim@example.com', name: 'Karim Bennani', city: 'Casablanca', phone: '+212 6 23 45 67 89' },
+    // ... add all 10 technicians
+  ];
+  
+  const insertUser = this.db.prepare(`
+    INSERT OR REPLACE INTO users (id, email, password, name, phone, role, city)
+    VALUES (?, ?, ?, ?, ?, 'technician', ?)
+  `);
+  
+  for (const user of technicianUsers) {
+    insertUser.run(user.id, user.email, 'hashed_password_here', user.name, user.phone, user.city);
+  }
+  
+  // Then seed technician profiles
+  const insertTech = this.db.prepare(`
+    INSERT OR REPLACE INTO technicians (
+      id, user_id, role, rating, reviews, price, image, tags, 
+      is_pro, is_promo, availability, bio, experience, certifications
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  
+  insertTech.run('tech-1', 'tech-1', 'Plombier', 4.8, 127, 150, '/images/tech1.jpg', 
+    JSON.stringify(['Fuites', 'Débouchage', 'Installation']), 1, 0, 'Immédiat',
+    'Expert en plomberie avec 10 ans d\'expérience', '10 ans', 
+    JSON.stringify(['Certification Professionnelle', 'Formation Sécurité']));
+  
+  // Repeat for all technicians...
+}
+```
+
+**STEP 2: FIX DATA RETRIEVAL METHODS**
+File: `server/storage.ts`
+
+Ensure getAllTechniciansWithUsers returns complete data:
+```typescript
+getAllTechniciansWithUsers(): TechnicianWithUser[] {
+  const stmt = this.db.prepare(`
+    SELECT 
+      t.*,
+      u.name as user_name,
+      u.email as user_email,
+      u.phone as user_phone,
+      u.city as user_city
+    FROM technicians t
+    JOIN users u ON t.user_id = u.id
+    ORDER BY t.rating DESC
+  `);
+  
+  const rows = stmt.all() as any[];
+  
+  return rows.map(row => ({
+    id: row.id,
+    userId: row.user_id,
+    name: row.user_name,
+    email: row.user_email,
+    phone: row.user_phone,
+    city: row.user_city,
+    role: row.role,
+    rating: row.rating,
+    reviews: row.reviews,
+    location: row.user_city,
+    price: row.price,
+    image: row.image || '/placeholder-avatar.jpg',
+    tags: JSON.parse(row.tags || '[]'),
+    isPro: Boolean(row.is_pro),
+    isPromo: Boolean(row.is_promo),
+    availability: row.availability,
+    bio: row.bio,
+    experience: row.experience,
+    certifications: JSON.parse(row.certifications || '[]')
+  }));
+}
+```
+
+**STEP 3: FIX JOB-TO-BOOKING FLOW**
+File: `server/routes.ts`
+
+Action A: Fix the job posting endpoint to return complete technician data
+```typescript
+app.post('/api/jobs', async (req, res) => {
+  try {
+    const { description, images, clientId } = req.body;
+    
+    // Analyze job
+    const analysis = await analyzeJobFromImages(description, images);
+    
+    // Get all technicians WITH USER DATA
+    const allTechnicians = storage.getAllTechniciansWithUsers();
+    
+    // Match technicians
+    const matches = matchTechnicians(
+      allTechnicians,
+      analysis.category,
+      analysis.city,
+      analysis.urgency
+    );
+    
+    // Create job with matches
+    const job = storage.createJob({
+      clientId,
+      category: analysis.category,
+      description: analysis.description,
+      estimatedCost: analysis.estimatedCost,
+      images,
+      urgency: analysis.urgency,
+      city: analysis.city,
+      matches: matches.map(m => ({
+        technicianId: m.technician.id,
+        rank: m.rank,
+        reasoning: m.reasoning
+      }))
+    });
+    
+    // Return job with full technician details
+    res.json({
+      ...job,
+      matchedTechnicians: matches.map(m => ({
+        ...m.technician,
+        matchRank: m.rank,
+        matchReasoning: m.reasoning
+      }))
+    });
+  } catch (error) {
+    console.error('Job creation error:', error);
+    res.status(500).json({ error: 'Failed to create job' });
+  }
+});
+```
+
+Action B: Create/fix the booking endpoint
+```typescript
+app.post('/api/bookings', async (req, res) => {
+  try {
+    const { clientId, technicianId, jobId, serviceType, date, time, address, notes } = req.body;
+    
+    // Validate technician exists and is available
+    const technician = storage.getTechnicianWithUser(technicianId);
+    if (!technician) {
+      return res.status(404).json({ error: 'Technician not found' });
+    }
+    
+    if (technician.availability === 'Sur RDV' && date === 'immediate') {
+      return res.status(400).json({ error: 'This technician requires appointment scheduling' });
+    }
+    
+    // Create booking
+    const booking = storage.createBooking({
+      clientId,
+      technicianId,
+      jobId,
+      serviceType,
+      scheduledDate: date,
+      scheduledTime: time,
+      address,
+      notes,
+      status: 'pending'
+    });
+    
+    res.json({ success: true, booking });
+  } catch (error) {
+    console.error('Booking creation error:', error);
+    res.status(500).json({ error: 'Failed to create booking' });
+  }
+});
+```
+
+**STEP 4: FIX SYNTAX ERRORS**
+Files: Check these files for stray braces or unclosed JSX
+
+Action A: `src/app/dashboard/history/page.tsx`
+Look for:
+- Unclosed `<div>` tags
+- Stray `}` after JSX closing tags
+- Missing `return` statement
+- Pattern to find: Search for `}` followed by another `}` without proper nesting
+
+Action B: `client/src/pages/TechnicianProfile.tsx`
+Ensure proper JSX structure:
+```typescript
+return (
+  <div className="container mx-auto px-4 py-8">
+    {/* Content */}
+  </div>
+); // Should end with ); not } or })}
+```
+
+**STEP 5: FIX BOOKING MODAL UI**
+File: `client/src/components/booking/BookingModal.tsx`
+
+Replace with this corrected structure:
+```typescript
+import { useState } from 'react';
+import { X, Calendar, Clock, MapPin } from 'lucide-react';
+import type { TechnicianWithUser } from '@/types';
+
+interface BookingModalProps {
+  technician: TechnicianWithUser;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (bookingData: BookingData) => void;
+  jobId?: string;
+}
+
+export interface BookingData {
+  date: string;
+  time: string;
+  address: string;
+  notes: string;
+}
+
+export default function BookingModal({ technician, isOpen, onClose, onConfirm, jobId }: BookingModalProps) {
+  const [formData, setFormData] = useState<BookingData>({
+    date: '',
+    time: '',
+    address: '',
+    notes: ''
+  });
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onConfirm(formData);
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div 
+          className="bg-white rounded-xl shadow-2xl w-full max-w-md pointer-events-auto transform transition-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Réserver</h2>
+              <p className="text-sm text-gray-600 mt-1">{technician.name} - {technician.role}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {/* Availability Badge */}
+            {technician.availability === 'Immédiat' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-green-700">Disponible immédiatement</span>
+              </div>
+            )}
+
+            {/* Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-2" />
+                Date
+              </label>
+              <input
+                type="date"
+                required
+                min={new Date().toISOString().split('T')[0]}
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Time */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="w-4 h-4 inline mr-2" />
+                Heure
+              </label>
+              <input
+                type="time"
+                required
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Address */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPin className="w-4 h-4 inline mr-2" />
+                Adresse
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="123 Rue Mohammed V, Casablanca"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notes (optionnel)
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Détails supplémentaires..."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              />
+            </div>
+
+            {/* Price Estimate */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Tarif horaire estimé</span>
+                <span className="text-xl font-bold text-blue-600">{technician.price} MAD/h</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
+              >
+                Confirmer
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>
+  );
+}
+```
+
+**STEP 6: CONNECT THE FLOW IN PostJob PAGE**
+File: `client/src/pages/PostJob.tsx`
+
+Ensure proper booking flow:
+```typescript
+const [showBookingModal, setShowBookingModal] = useState(false);
+const [selectedTechnician, setSelectedTechnician] = useState<TechnicianWithUser | null>(null);
+
+const handleBookTechnician = (technician: TechnicianWithUser) => {
+  setSelectedTechnician(technician);
+  setShowBookingModal(true);
+};
+
+const handleConfirmBooking = async (bookingData: BookingData) => {
+  try {
+    const response = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientId: user?.id,
+        technicianId: selectedTechnician?.id,
+        jobId: jobResult?.id,
+        serviceType: jobResult?.category || 'General',
+        date: bookingData.date,
+        time: bookingData.time,
+        address: bookingData.address,
+        notes: bookingData.notes
+      })
+    });
+    
+    if (response.ok) {
+      alert('Réservation confirmée!');
+      setShowBookingModal(false);
+      // Redirect to dashboard
+      window.location.href = '/dashboard';
+    } else {
+      const error = await response.json();
+      alert(`Erreur: ${error.error}`);
+    }
+  } catch (error) {
+    console.error('Booking error:', error);
+    alert('Erreur lors de la réservation');
+  }
+};
+
+// In the JSX:
+{jobResult?.matchedTechnicians?.map((tech) => (
+  <TechnicianMatchCard
+    key={tech.id}
+    technician={tech}
+    match={{ rank: tech.matchRank, reasoning: tech.matchReasoning }}
+    onBook={() => handleBookTechnician(tech)}
+  />
+))}
+
+{showBookingModal && selectedTechnician && (
+  <BookingModal
+    technician={selectedTechnician}
+    isOpen={showBookingModal}
+    onClose={() => setShowBookingModal(false)}
+    onConfirm={handleConfirmBooking}
+    jobId={jobResult?.id}
+  />
+)}
+```
+
+</task_instructions>
+
+<verification_checklist>
+After completing all steps, verify:
+- [ ] `npm run build` completes without syntax errors
+- [ ] Database schema shows all tables: `users`, `technicians`, `bookings`, `jobs`
+- [ ] Technician directory displays 10 technicians with correct data
+- [ ] Job posting returns matched technicians
+- [ ] Clicking "Réserver" opens modal as centered overlay
+- [ ] Modal form validates all required fields
+- [ ] Submitting booking creates entry in database
+- [ ] Booking redirects to dashboard showing confirmation
+- [ ] "Immédiat" technicians show green availability badge
+</verification_checklist>
+
+<success_criteria>
+You will know you've succeeded when:
+1. No red error notifications in console
+2. Job posting → technician matching → booking works end-to-end
+3. Modal appears as a proper overlay (not inline)
+4. Booking creates a database entry and shows in dashboard/history
+5. User can successfully book Youssef or Karim for immediate service
+</success_criteria>
