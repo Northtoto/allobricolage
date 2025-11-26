@@ -214,6 +214,20 @@ Required environment variables:
 - **Primary (Royal Blue)**: #1e40af / hsl(223, 71%, 40%)
 - **Accent (Sunset Orange)**: #ea580c / hsl(21, 90%, 48%)
 
+### Technician Directory & Booking System (November 2025)
+- **TechnicianDirectory**: `/technicians` page with grid layout, search, service/city filters
+- **TechnicianProfile**: `/technician/:id` page with 2-column layout (30% sidebar, 70% content)
+- **TechnicianCard**: Vertical card layout with top-half image, PRO (green) and Promo (red) badges
+- **BookingModal**: Enhanced with "Améliorer avec IA" button for AI description enhancement
+- **API Updates**: 
+  - `/api/technicians` and `/api/technicians/:id` now return `TechnicianWithUser` objects
+  - `/api/bookings` supports direct bookings (auto-creates job when `jobId="direct"`)
+- **Key Files**:
+  - `client/src/pages/TechnicianDirectory.tsx` - Directory page
+  - `client/src/pages/TechnicianProfile.tsx` - Profile page
+  - `client/src/components/technician/TechnicianCard.tsx` - Card component
+  - `client/src/components/booking/BookingModal.tsx` - Booking modal
+
 ### Recommended Next Steps
 1. Add Zod validation for signup payload (numeric ranges, phone formatting)
 2. Backfill hashed passwords for seeded test accounts

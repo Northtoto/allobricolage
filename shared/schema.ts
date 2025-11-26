@@ -61,6 +61,10 @@ export const technicians = pgTable("technicians", {
   hourlyRate: integer("hourly_rate").notNull().default(150),
   isVerified: boolean("is_verified").notNull().default(false),
   isAvailable: boolean("is_available").notNull().default(true),
+  isPro: boolean("is_pro").notNull().default(false),
+  isPromo: boolean("is_promo").notNull().default(false),
+  availability: text("availability").notNull().default("Sur RDV"),
+  certifications: text("certifications").array().notNull().default([]),
   latitude: real("latitude"),
   longitude: real("longitude"),
   languages: text("languages").array().notNull().default(["français", "arabe"]),
@@ -120,12 +124,20 @@ export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 
+// Review type for recent reviews
+export interface TechnicianReview {
+  author: string;
+  text: string;
+  rating?: number;
+}
+
 // Combined technician with user info for display
 export interface TechnicianWithUser {
   id: string;
   userId: string;
   name: string;
   phone: string | null;
+  email?: string | null;
   city: string | null;
   services: string[];
   skills: string[];
@@ -140,6 +152,11 @@ export interface TechnicianWithUser {
   hourlyRate: number;
   isVerified: boolean;
   isAvailable: boolean;
+  isPro: boolean;
+  isPromo: boolean;
+  availability: string;
+  certifications: string[];
+  recentReview?: TechnicianReview | null;
   latitude: number | null;
   longitude: number | null;
   languages: string[];

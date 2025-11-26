@@ -59,36 +59,105 @@ export class MemStorage implements IStorage {
   private seedTechnicians() {
     const sampleData = [
       {
+        user: { username: "youssef_elfassi", password: "", name: "Youssef El Fassi", phone: "+212 600 000 000", city: "Casablanca", role: "technician" },
+        tech: { 
+          services: ["plomberie"], 
+          skills: ["Fuites", "Débouchage", "Installation sanitaire"], 
+          rating: 4.8, 
+          reviewCount: 125, 
+          completedJobs: 312, 
+          responseTimeMinutes: 12, 
+          completionRate: 0.98, 
+          yearsExperience: 10, 
+          hourlyRate: 150, 
+          isVerified: true, 
+          isAvailable: true, 
+          isPro: true, 
+          isPromo: true, 
+          availability: "Immédiat",
+          certifications: ["Plomberie Certifié"],
+          latitude: 33.5731, 
+          longitude: -7.5898, 
+          bio: "Expert en plomberie sanitaire avec 10 ans d'expérience. Intervention rapide et travail soigné garanti.", 
+          languages: ["français", "arabe"],
+          photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=400&h=400",
+          email: "youssef@example.com",
+          recentReview: { author: "Mohammed B.", text: "Excellent travail, très professionnel et ponctuel.", rating: 5 }
+        }
+      },
+      {
+        user: { username: "karim_bennani", password: "", name: "Karim Bennani", phone: "+212 611 222 333", city: "Marrakech", role: "technician" },
+        tech: { 
+          services: ["electricite"], 
+          skills: ["Installations", "Mise aux normes", "Dépannage"], 
+          rating: 4.7, 
+          reviewCount: 210, 
+          completedJobs: 445, 
+          responseTimeMinutes: 15, 
+          completionRate: 0.96, 
+          yearsExperience: 12, 
+          hourlyRate: 180, 
+          isVerified: true, 
+          isAvailable: true, 
+          isPro: true, 
+          isPromo: true, 
+          availability: "Immédiat",
+          certifications: ["Électricien Agréé", "Habilitation BR"],
+          latitude: 31.6295, 
+          longitude: -7.9811, 
+          bio: "Électricien certifié spécialisé dans les installations résidentielles et commerciales.", 
+          languages: ["français", "arabe", "anglais"],
+          photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?fit=crop&w=400&h=400",
+          email: "karim.bennani@email.com",
+          recentReview: { author: "Sara M.", text: "Travail impeccable et très réactif. Je recommande vivement.", rating: 5 }
+        }
+      },
+      {
+        user: { username: "fatima_alaoui", password: "", name: "Fatima Zahra Alaoui", phone: "+212 622 334 455", city: "Rabat", role: "technician" },
+        tech: { 
+          services: ["peinture"], 
+          skills: ["Peinture murale", "Décoration", "Enduit"], 
+          rating: 4.9, 
+          reviewCount: 98, 
+          completedJobs: 187, 
+          responseTimeMinutes: 20, 
+          completionRate: 0.99, 
+          yearsExperience: 8, 
+          hourlyRate: 120, 
+          isVerified: true, 
+          isAvailable: true, 
+          isPro: true, 
+          isPromo: false, 
+          availability: "Sur RDV",
+          certifications: ["Compagnon du Devoir"],
+          latitude: 34.0209, 
+          longitude: -6.8416, 
+          bio: "Artiste peintre passionnée, je transforme vos espaces avec soin et créativité. Spécialisée dans les finitions décoratives.", 
+          languages: ["français", "arabe"],
+          photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?fit=crop&w=400&h=400",
+          email: "fatima.alaoui@email.com",
+          recentReview: { author: "Leila S.", text: "Fatima est une véritable artiste. Mon salon est transformé.", rating: 5 }
+        }
+      },
+      {
         user: { username: "ahmed_benali", password: "", name: "Ahmed Benali", phone: "+212 661-123456", city: "Casablanca", role: "technician" },
-        tech: { services: ["plomberie"], skills: ["Réparation fuites", "Installation sanitaire", "Débouchage"], rating: 4.9, reviewCount: 234, completedJobs: 512, responseTimeMinutes: 12, completionRate: 0.98, yearsExperience: 15, hourlyRate: 150, isVerified: true, isAvailable: true, latitude: 33.5731, longitude: -7.5898, bio: "Plombier expert avec 15 ans d'expérience.", languages: ["français", "arabe"] }
+        tech: { services: ["plomberie"], skills: ["Réparation fuites", "Installation sanitaire", "Débouchage"], rating: 4.9, reviewCount: 234, completedJobs: 512, responseTimeMinutes: 12, completionRate: 0.98, yearsExperience: 15, hourlyRate: 150, isVerified: true, isAvailable: true, isPro: true, isPromo: false, availability: "Immédiat", certifications: [], latitude: 33.5731, longitude: -7.5898, bio: "Plombier expert avec 15 ans d'expérience.", languages: ["français", "arabe"], photo: null, email: null, recentReview: null }
       },
       {
         user: { username: "mohamed_alami", password: "", name: "Mohamed Alami", phone: "+212 662-234567", city: "Casablanca", role: "technician" },
-        tech: { services: ["plomberie", "climatisation"], skills: ["Chauffe-eau", "Climatisation", "Plomberie générale"], rating: 4.7, reviewCount: 156, completedJobs: 289, responseTimeMinutes: 18, completionRate: 0.95, yearsExperience: 8, hourlyRate: 120, isVerified: true, isAvailable: true, latitude: 33.5892, longitude: -7.6033, bio: "Technicien polyvalent.", languages: ["français", "arabe", "anglais"] }
-      },
-      {
-        user: { username: "youssef_tazi", password: "", name: "Youssef Tazi", phone: "+212 663-345678", city: "Casablanca", role: "technician" },
-        tech: { services: ["electricite"], skills: ["Installation électrique", "Dépannage", "Tableaux électriques"], rating: 4.8, reviewCount: 189, completedJobs: 423, responseTimeMinutes: 15, completionRate: 0.97, yearsExperience: 12, hourlyRate: 140, isVerified: true, isAvailable: true, latitude: 33.5650, longitude: -7.6200, bio: "Électricien certifié.", languages: ["français", "arabe"] }
-      },
-      {
-        user: { username: "karim_fassi", password: "", name: "Karim Fassi", phone: "+212 664-456789", city: "Rabat", role: "technician" },
-        tech: { services: ["peinture"], skills: ["Peinture intérieure", "Peinture extérieure", "Enduit"], rating: 4.6, reviewCount: 98, completedJobs: 167, responseTimeMinutes: 25, completionRate: 0.94, yearsExperience: 10, hourlyRate: 100, isVerified: true, isAvailable: true, latitude: 34.0209, longitude: -6.8416, bio: "Peintre professionnel.", languages: ["français", "arabe"] }
+        tech: { services: ["plomberie", "climatisation"], skills: ["Chauffe-eau", "Climatisation", "Plomberie générale"], rating: 4.7, reviewCount: 156, completedJobs: 289, responseTimeMinutes: 18, completionRate: 0.95, yearsExperience: 8, hourlyRate: 120, isVerified: true, isAvailable: true, isPro: false, isPromo: true, availability: "Immédiat", certifications: [], latitude: 33.5892, longitude: -7.6033, bio: "Technicien polyvalent.", languages: ["français", "arabe", "anglais"], photo: null, email: null, recentReview: null }
       },
       {
         user: { username: "hassan_chraibi", password: "", name: "Hassan Chraibi", phone: "+212 665-567890", city: "Casablanca", role: "technician" },
-        tech: { services: ["menuiserie"], skills: ["Menuiserie bois", "Portes", "Fenêtres"], rating: 4.9, reviewCount: 145, completedJobs: 298, responseTimeMinutes: 20, completionRate: 0.96, yearsExperience: 20, hourlyRate: 130, isVerified: true, isAvailable: false, latitude: 33.5800, longitude: -7.5900, bio: "Maître menuisier.", languages: ["français", "arabe"] }
+        tech: { services: ["menuiserie"], skills: ["Menuiserie bois", "Portes", "Fenêtres"], rating: 4.9, reviewCount: 145, completedJobs: 298, responseTimeMinutes: 20, completionRate: 0.96, yearsExperience: 20, hourlyRate: 130, isVerified: true, isAvailable: false, isPro: true, isPromo: false, availability: "Sur RDV", certifications: ["Maître Artisan"], latitude: 33.5800, longitude: -7.5900, bio: "Maître menuisier.", languages: ["français", "arabe"], photo: null, email: null, recentReview: null }
       },
       {
         user: { username: "omar_berrada", password: "", name: "Omar Berrada", phone: "+212 666-678901", city: "Marrakech", role: "technician" },
-        tech: { services: ["plomberie"], skills: ["Plomberie traditionnelle", "Hammam", "Fontaines"], rating: 4.5, reviewCount: 87, completedJobs: 156, responseTimeMinutes: 30, completionRate: 0.92, yearsExperience: 7, hourlyRate: 110, isVerified: true, isAvailable: true, latitude: 31.6295, longitude: -7.9811, bio: "Spécialiste plomberie traditionnelle.", languages: ["français", "arabe", "anglais"] }
+        tech: { services: ["plomberie"], skills: ["Plomberie traditionnelle", "Hammam", "Fontaines"], rating: 4.5, reviewCount: 87, completedJobs: 156, responseTimeMinutes: 30, completionRate: 0.92, yearsExperience: 7, hourlyRate: 110, isVerified: true, isAvailable: true, isPro: false, isPromo: false, availability: "Sur RDV", certifications: [], latitude: 31.6295, longitude: -7.9811, bio: "Spécialiste plomberie traditionnelle.", languages: ["français", "arabe", "anglais"], photo: null, email: null, recentReview: null }
       },
       {
         user: { username: "rachid_elidrissi", password: "", name: "Rachid El Idrissi", phone: "+212 667-789012", city: "Casablanca", role: "technician" },
-        tech: { services: ["climatisation"], skills: ["Installation climatisation", "Maintenance", "Réparation"], rating: 4.8, reviewCount: 112, completedJobs: 234, responseTimeMinutes: 22, completionRate: 0.97, yearsExperience: 9, hourlyRate: 160, isVerified: true, isAvailable: true, latitude: 33.5700, longitude: -7.6100, bio: "Technicien frigoriste certifié.", languages: ["français", "arabe"] }
-      },
-      {
-        user: { username: "driss_mohammadi", password: "", name: "Driss Mohammadi", phone: "+212 668-890123", city: "Fès", role: "technician" },
-        tech: { services: ["carrelage", "maconnerie"], skills: ["Zellige", "Carrelage moderne", "Mosaïque"], rating: 4.7, reviewCount: 76, completedJobs: 134, responseTimeMinutes: 35, completionRate: 0.93, yearsExperience: 18, hourlyRate: 120, isVerified: true, isAvailable: true, latitude: 34.0181, longitude: -5.0078, bio: "Maître artisan en zellige.", languages: ["français", "arabe"] }
+        tech: { services: ["climatisation"], skills: ["Installation climatisation", "Maintenance", "Réparation"], rating: 4.8, reviewCount: 112, completedJobs: 234, responseTimeMinutes: 22, completionRate: 0.97, yearsExperience: 9, hourlyRate: 160, isVerified: true, isAvailable: true, isPro: true, isPromo: true, availability: "Immédiat", certifications: ["Frigoriste Certifié"], latitude: 33.5700, longitude: -7.6100, bio: "Technicien frigoriste certifié.", languages: ["français", "arabe"], photo: null, email: null, recentReview: null }
       },
     ];
 
@@ -105,7 +174,7 @@ export class MemStorage implements IStorage {
         services: tech.services,
         skills: tech.skills,
         bio: tech.bio || null,
-        photo: null,
+        photo: tech.photo || null,
         rating: tech.rating,
         reviewCount: tech.reviewCount,
         completedJobs: tech.completedJobs,
@@ -115,10 +184,19 @@ export class MemStorage implements IStorage {
         hourlyRate: tech.hourlyRate,
         isVerified: tech.isVerified,
         isAvailable: tech.isAvailable,
+        isPro: tech.isPro,
+        isPromo: tech.isPromo,
+        availability: tech.availability,
+        certifications: tech.certifications,
         latitude: tech.latitude || null,
         longitude: tech.longitude || null,
         languages: tech.languages,
       };
+      
+      // Store extra fields for TechnicianWithUser
+      (techRecord as any)._email = tech.email || null;
+      (techRecord as any)._recentReview = tech.recentReview || null;
+      
       this.technicians.set(techId, techRecord);
     });
   }
@@ -129,6 +207,7 @@ export class MemStorage implements IStorage {
       userId: tech.userId,
       name: user.name,
       phone: user.phone,
+      email: (tech as any)._email || null,
       city: user.city,
       services: tech.services,
       skills: tech.skills,
@@ -143,6 +222,11 @@ export class MemStorage implements IStorage {
       hourlyRate: tech.hourlyRate,
       isVerified: tech.isVerified,
       isAvailable: tech.isAvailable,
+      isPro: tech.isPro,
+      isPromo: tech.isPromo,
+      availability: tech.availability,
+      certifications: tech.certifications,
+      recentReview: (tech as any)._recentReview || null,
       latitude: tech.latitude,
       longitude: tech.longitude,
       languages: tech.languages,

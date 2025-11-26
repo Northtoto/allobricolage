@@ -1,31 +1,155 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { useI18n } from "@/lib/i18n";
-import { 
-  Star, 
-  MapPin, 
-  Clock, 
-  CheckCircle, 
-  Shield, 
-  ChevronDown,
-  ChevronUp,
-  Zap
-} from "lucide-react";
-import { useState } from "react";
-import type { TechnicianMatch } from "@shared/schema";
+import { Star, MapPin } from "lucide-react";
+import { Link } from "wouter";
+import type { TechnicianWithUser } from "@shared/schema";
 
 interface TechnicianCardProps {
-  match: TechnicianMatch;
-  rank: number;
-  onBook: (match: TechnicianMatch) => void;
+  technician: TechnicianWithUser;
+  onBook?: (technician: TechnicianWithUser) => void;
 }
 
-export function TechnicianCard({ match, rank, onBook }: TechnicianCardProps) {
+export function TechnicianCard({ technician, onBook }: TechnicianCardProps) {
   const { t } = useI18n();
-  const [showExplanation, setShowExplanation] = useState(false);
+
+  const defaultImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(technician.name)}&size=400&background=1e40af&color=fff`;
+
+  return (
+    <Card 
+      className="overflow-hidden hover-elevate transition-all bg-card"
+      data-testid={`card-technician-${technician.id}`}
+    >
+      <div className="relative h-48">
+        <img
+          src={technician.photo || defaultImage}
+          alt={technician.name}
+          className="w-full h-full object-cover"
+          data-testid={`img-technician-${technician.id}`}
+        />
+        <div className="absolute top-2 right-2 flex gap-2">
+          {technician.isPro && (
+            <Badge 
+              className="bg-green-500 text-white border-0 rounded-full px-3 py-1 font-semibold"
+              data-testid={`badge-pro-${technician.id}`}
+            >
+              PRO
+            </Badge>
+          )}
+          {technician.isPromo && (
+            <Badge 
+              className="bg-red-500 text-white border-0 px-3 py-1 font-semibold"
+              data-testid={`badge-promo-${technician.id}`}
+            >
+              Promo
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="p-4">
+        <h3 
+          className="font-bold text-lg text-foreground mb-1"
+          data-testid={`text-name-${technician.id}`}
+        >
+          {technician.name}
+        </h3>
+        
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-1 text-yellow-500">
+            <Star className="h-4 w-4 fill-current" />
+            <span className="font-medium text-foreground">{technician.rating.toFixed(1)}</span>
+          </div>
+          <span className="text-muted-foreground text-sm">
+            ({technician.reviewCount})
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1 text-muted-foreground text-sm mb-3">
+          <MapPin className="h-4 w-4" />
+          <span data-testid={`text-location-${technician.id}`}>{technician.city}</span>
+        </div>
+
+        <div className="flex flex-wrap gap-1 mb-4">
+          {technician.skills.slice(0, 3).map((skill, idx) => (
+            <Badge 
+              key={idx} 
+              variant="secondary" 
+              className="bg-muted text-muted-foreground text-xs font-normal rounded-full"
+            >
+              {skill}
+            </Badge>
+          ))}
+          {technician.skills.length > 3 && (
+            <Badge 
+              variant="secondary" 
+              className="bg-muted text-muted-foreground text-xs font-normal rounded-full"
+            >
+              +{technician.skills.length - 3}
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <span 
+            className="font-bold text-foreground"
+            data-testid={`text-price-${technician.id}`}
+          >
+            {technician.hourlyRate} MAD / heure
+          </span>
+          <Badge 
+            variant="outline"
+            className={`font-medium ${
+              technician.availability === "Immédiat" 
+                ? "border-green-500 text-green-600 bg-green-50 dark:bg-green-900/20" 
+                : "border-muted-foreground text-muted-foreground"
+            }`}
+            data-testid={`badge-availability-${technician.id}`}
+          >
+            {technician.availability}
+          </Badge>
+        </div>
+
+        <Link href={`/technician/${technician.id}`} className="block">
+          <Button 
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-800 dark:hover:bg-slate-700"
+            data-testid={`button-book-${technician.id}`}
+          >
+            Réserver
+          </Button>
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
+interface TechnicianMatchCardProps {
+  match: {
+    technician: TechnicianWithUser;
+    matchScore: number;
+    explanation: string;
+    etaMinutes: number;
+    estimatedCost: {
+      minCost: number;
+      maxCost: number;
+      likelyCost: number;
+    };
+    factors: {
+      specializationMatch: number;
+      locationScore: number;
+      availabilityScore: number;
+      responseTimeScore: number;
+      completionRateScore: number;
+      ratingScore: number;
+      priceScore: number;
+    };
+  };
+  rank: number;
+  onBook: (match: any) => void;
+}
+
+export function TechnicianMatchCard({ match, rank, onBook }: TechnicianMatchCardProps) {
   const { technician } = match;
 
   const getMatchScoreColor = (score: number) => {
@@ -35,158 +159,97 @@ export function TechnicianCard({ match, rank, onBook }: TechnicianCardProps) {
     return "bg-orange-500 text-white";
   };
 
+  const defaultImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(technician.name)}&size=400&background=1e40af&color=fff`;
+
   return (
     <Card 
-      className="p-6 relative overflow-visible hover-elevate transition-all"
-      data-testid={`card-technician-${technician.id}`}
+      className="overflow-hidden hover-elevate transition-all bg-card relative"
+      data-testid={`card-match-${technician.id}`}
     >
-      {/* Rank Badge */}
-      <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md">
+      <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md z-10">
         #{rank}
       </div>
 
-      {/* Match Score Badge */}
       <Badge 
-        className={`absolute -top-3 -right-3 ${getMatchScoreColor(match.matchScore)} px-3 py-1 font-bold shadow-md`}
+        className={`absolute top-2 left-10 ${getMatchScoreColor(match.matchScore)} px-2 py-1 font-bold shadow-md z-10`}
       >
-        {Math.round(match.matchScore * 100)}% Match
+        {Math.round(match.matchScore * 100)}%
       </Badge>
 
-      <div className="flex gap-4">
-        {/* Avatar */}
-        <div className="relative">
-          <Avatar className="h-20 w-20 border-2 border-border">
-            <AvatarImage src={technician.photo || undefined} alt={technician.name} />
-            <AvatarFallback className="text-xl font-semibold bg-primary/10 text-primary">
-              {technician.name.split(" ").map(n => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          {technician.isAvailable && (
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
-              <Zap className="h-3 w-3 text-white" />
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div>
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                {technician.name}
-                {technician.isVerified && (
-                  <Shield className="h-4 w-4 text-blue-500" />
-                )}
-              </h3>
-              <div className="flex items-center gap-1 text-yellow-500">
-                <Star className="h-4 w-4 fill-current" />
-                <span className="font-medium">{technician.rating.toFixed(1)}</span>
-                <span className="text-muted-foreground text-sm">
-                  ({technician.reviewCount} {t("common.reviews")})
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Row */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-3">
-            <div className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              <span>{match.etaMinutes} {t("common.min")}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>{technician.responseTimeMinutes} {t("common.min")} réponse</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <CheckCircle className="h-4 w-4" />
-              <span>{technician.completedJobs} travaux</span>
-            </div>
-          </div>
-
-          {/* Skills */}
-          <div className="flex flex-wrap gap-1 mb-4">
-            {technician.skills.slice(0, 4).map((skill, idx) => (
-              <Badge key={idx} variant="outline" className="text-xs">
-                {skill}
-              </Badge>
-            ))}
-            {technician.skills.length > 4 && (
-              <Badge variant="outline" className="text-xs">
-                +{technician.skills.length - 4}
-              </Badge>
-            )}
-          </div>
-
-          {/* Availability & Price */}
-          <div className="flex items-center justify-between mb-4">
-            <Badge className={technician.isAvailable 
-              ? "bg-green-500/10 text-green-600 border-green-500/20 border" 
-              : "bg-muted text-muted-foreground"
-            }>
-              {technician.isAvailable ? t("match.available") : t("match.nextAvailable")}
+      <div className="relative h-48">
+        <img
+          src={technician.photo || defaultImage}
+          alt={technician.name}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute top-2 right-2 flex gap-2">
+          {technician.isPro && (
+            <Badge className="bg-green-500 text-white border-0 rounded-full px-3 py-1 font-semibold">
+              PRO
             </Badge>
-            <div className="text-right">
-              <div className="font-bold text-lg text-chart-2">
-                {match.estimatedCost.minCost}-{match.estimatedCost.maxCost} {t("common.mad")}
-              </div>
-              <div className="text-xs text-muted-foreground">Estimation IA</div>
-            </div>
-          </div>
-
-          {/* Why Match Button */}
-          <button
-            onClick={() => setShowExplanation(!showExplanation)}
-            className="flex items-center gap-1 text-sm text-primary hover:underline mb-4"
-            data-testid={`button-why-match-${technician.id}`}
-          >
-            {t("match.whyMatch")}
-            {showExplanation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
-
-          {/* Match Explanation */}
-          {showExplanation && (
-            <div className="mb-4 p-4 rounded-lg bg-muted/50 border border-border">
-              <p className="text-sm text-muted-foreground mb-4">{match.explanation}</p>
-              
-              {/* Factor Scores */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span>Spécialisation</span>
-                  <span className="font-medium">{Math.round(match.factors.specializationMatch * 100)}%</span>
-                </div>
-                <Progress value={match.factors.specializationMatch * 100} className="h-1.5" />
-                
-                <div className="flex items-center justify-between text-xs">
-                  <span>Proximité</span>
-                  <span className="font-medium">{Math.round(match.factors.locationScore * 100)}%</span>
-                </div>
-                <Progress value={match.factors.locationScore * 100} className="h-1.5" />
-                
-                <div className="flex items-center justify-between text-xs">
-                  <span>Note client</span>
-                  <span className="font-medium">{Math.round(match.factors.ratingScore * 100)}%</span>
-                </div>
-                <Progress value={match.factors.ratingScore * 100} className="h-1.5" />
-                
-                <div className="flex items-center justify-between text-xs">
-                  <span>Réactivité</span>
-                  <span className="font-medium">{Math.round(match.factors.responseTimeScore * 100)}%</span>
-                </div>
-                <Progress value={match.factors.responseTimeScore * 100} className="h-1.5" />
-              </div>
-            </div>
           )}
-
-          {/* Book Button */}
-          <Button 
-            className="w-full" 
-            onClick={() => onBook(match)}
-            data-testid={`button-book-${technician.id}`}
-          >
-            {t("match.book")} {technician.name.split(" ")[0]}
-          </Button>
+          {technician.isPromo && (
+            <Badge className="bg-red-500 text-white border-0 px-3 py-1 font-semibold">
+              Promo
+            </Badge>
+          )}
         </div>
+      </div>
+
+      <div className="p-4">
+        <h3 className="font-bold text-lg text-foreground mb-1">
+          {technician.name}
+        </h3>
+        
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-1 text-yellow-500">
+            <Star className="h-4 w-4 fill-current" />
+            <span className="font-medium text-foreground">{technician.rating.toFixed(1)}</span>
+          </div>
+          <span className="text-muted-foreground text-sm">
+            ({technician.reviewCount})
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1 text-muted-foreground text-sm mb-3">
+          <MapPin className="h-4 w-4" />
+          <span>{technician.city} - {match.etaMinutes} min</span>
+        </div>
+
+        <div className="flex flex-wrap gap-1 mb-4">
+          {technician.skills.slice(0, 3).map((skill, idx) => (
+            <Badge 
+              key={idx} 
+              variant="secondary" 
+              className="bg-muted text-muted-foreground text-xs font-normal rounded-full"
+            >
+              {skill}
+            </Badge>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <span className="font-bold text-foreground">
+            {match.estimatedCost.minCost}-{match.estimatedCost.maxCost} MAD
+          </span>
+          <Badge 
+            variant="outline"
+            className={`font-medium ${
+              technician.availability === "Immédiat" 
+                ? "border-green-500 text-green-600 bg-green-50 dark:bg-green-900/20" 
+                : "border-muted-foreground text-muted-foreground"
+            }`}
+          >
+            {technician.availability}
+          </Badge>
+        </div>
+
+        <Button 
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-800 dark:hover:bg-slate-700"
+          onClick={() => onBook(match)}
+        >
+          Réserver
+        </Button>
       </div>
     </Card>
   );

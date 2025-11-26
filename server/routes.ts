@@ -144,11 +144,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/technicians", async (req, res) => {
     try {
       const { city, service } = req.query;
-      let technicians = await storage.getAllTechnicians();
+      let technicians = await storage.getAllTechniciansWithUsers();
       
       if (city) {
         technicians = technicians.filter(
-          t => t.city.toLowerCase() === (city as string).toLowerCase()
+          t => t.city?.toLowerCase() === (city as string).toLowerCase()
         );
       }
       
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get technician by ID
   app.get("/api/technicians/:id", async (req, res) => {
     try {
-      const technician = await storage.getTechnician(req.params.id);
+      const technician = await storage.getTechnicianWithUser(req.params.id);
       if (!technician) {
         return res.status(404).json({ error: "Technician not found" });
       }
@@ -184,37 +184,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create booking
   app.post("/api/bookings", async (req, res) => {
     try {
-      const { jobId, technicianId, clientName, clientPhone, scheduledDate, scheduledTime } = req.body;
+      const { jobId, technicianId, clientName, clientPhone, scheduledDate, scheduledTime, description } = req.body;
       
-      if (!jobId || !technicianId || !clientName || !clientPhone || !scheduledDate || !scheduledTime) {
+      if (!technicianId || !clientName || !clientPhone || !scheduledDate || !scheduledTime) {
         return res.status(400).json({ error: "All booking fields are required" });
       }
 
-      const job = await storage.getJob(jobId);
-      if (!job) {
-        return res.status(404).json({ error: "Job not found" });
-      }
-
-      const technician = await storage.getTechnician(technicianId);
-      if (!technician) {
+      const technicianWithUser = await storage.getTechnicianWithUser(technicianId);
+      if (!technicianWithUser) {
         return res.status(404).json({ error: "Technician not found" });
       }
 
+      let actualJobId = jobId;
+      let estimatedCost = technicianWithUser.hourlyRate || 200;
+
+      // Handle direct bookings (no pre-existing job)
+      if (!jobId || jobId === "direct") {
+        const primaryService = technicianWithUser.services[0] || "general";
+        const newJob = await storage.createJob({
+          description: description || `Réservation directe avec ${technicianWithUser.name}`,
+          city: technicianWithUser.city || "Casablanca",
+          service: primaryService,
+          urgency: "normal",
+          complexity: "medium",
+          status: "accepted",
+          likelyCost: estimatedCost,
+          minCost: Math.round(estimatedCost * 0.8),
+          maxCost: Math.round(estimatedCost * 1.3),
+          extractedKeywords: [primaryService],
+        });
+        actualJobId = newJob.id;
+      } else {
+        const job = await storage.getJob(jobId);
+        if (!job) {
+          return res.status(404).json({ error: "Job not found" });
+        }
+        estimatedCost = job.likelyCost;
+      }
+
       const booking = await storage.createBooking({
-        jobId,
+        jobId: actualJobId,
         technicianId,
         clientName,
         clientPhone,
         scheduledDate,
         scheduledTime,
         status: "pending",
-        estimatedCost: job.likelyCost,
-        matchScore: 0.85,
-        matchExplanation: `Réservation pour ${technician.name}`,
+        estimatedCost,
+        matchScore: 0.90,
+        matchExplanation: `Réservation confirmée avec ${technicianWithUser.name}`,
       });
 
       // Update job status
-      await storage.updateJob(jobId, { status: "accepted" });
+      await storage.updateJob(actualJobId, { status: "accepted" });
 
       res.json(booking);
     } catch (error) {

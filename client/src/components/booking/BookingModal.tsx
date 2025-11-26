@@ -3,23 +3,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
-import { Calendar, Clock, Star, Shield, Loader2, CheckCircle } from "lucide-react";
+import { Calendar, Clock, Star, Shield, Loader2, CheckCircle, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import type { TechnicianMatch } from "@shared/schema";
+import type { TechnicianMatch, TechnicianWithUser } from "@shared/schema";
 
 interface BookingModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
-  match: TechnicianMatch | null;
-  jobId: string;
+  match?: TechnicianMatch | null;
+  technician?: TechnicianWithUser | null;
+  jobId?: string;
 }
 
-export function BookingModal({ isOpen, onClose, match, jobId }: BookingModalProps) {
+export function BookingModal({ isOpen = true, onClose, match, technician: standaloneTechnician, jobId = "direct" }: BookingModalProps) {
   const { t } = useI18n();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -28,8 +30,12 @@ export function BookingModal({ isOpen, onClose, match, jobId }: BookingModalProp
     clientPhone: "",
     scheduledDate: "",
     scheduledTime: "",
+    description: "",
   });
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+
+  const technician = match?.technician || standaloneTechnician;
 
   const bookingMutation = useMutation({
     mutationFn: async (data: typeof formData & { jobId: string; technicianId: string }) => {
@@ -52,9 +58,49 @@ export function BookingModal({ isOpen, onClose, match, jobId }: BookingModalProp
     },
   });
 
-  if (!match) return null;
+  if (!technician) return null;
 
-  const { technician } = match;
+  const handleEnhanceWithAI = async () => {
+    if (!formData.description.trim()) {
+      toast({
+        title: "Description requise",
+        description: "Veuillez d'abord décrire votre problème.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsEnhancing(true);
+    try {
+      const response = await apiRequest("POST", "/api/jobs/analyze", { 
+        description: formData.description,
+        city: technician?.city || "Casablanca",
+        urgency: "normal"
+      });
+      const result = await response.json();
+      const analysis = result.analysis || result;
+      if (analysis.extractedKeywords && analysis.extractedKeywords.length > 0) {
+        const enhanced = `${formData.description}\n\nDétails identifiés: ${analysis.extractedKeywords.join(", ")}. Urgence: ${analysis.urgency || "normale"}. Complexité: ${analysis.complexity || "modérée"}.`;
+        setFormData({ ...formData, description: enhanced });
+        toast({
+          title: "Description améliorée",
+          description: "L'IA a enrichi votre description.",
+        });
+      } else {
+        toast({
+          title: "Analyse complète",
+          description: "Votre description est déjà bien détaillée.",
+        });
+      }
+    } catch {
+      toast({
+        title: "Amélioration échouée",
+        description: "Impossible d'améliorer la description pour le moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +113,11 @@ export function BookingModal({ isOpen, onClose, match, jobId }: BookingModalProp
       return;
     }
     bookingMutation.mutate({
-      ...formData,
+      clientName: formData.clientName,
+      clientPhone: formData.clientPhone,
+      scheduledDate: formData.scheduledDate,
+      scheduledTime: formData.scheduledTime,
+      description: formData.description,
       jobId,
       technicianId: technician.id,
     });
@@ -75,7 +125,7 @@ export function BookingModal({ isOpen, onClose, match, jobId }: BookingModalProp
 
   const handleClose = () => {
     setBookingSuccess(false);
-    setFormData({ clientName: "", clientPhone: "", scheduledDate: "", scheduledTime: "" });
+    setFormData({ clientName: "", clientPhone: "", scheduledDate: "", scheduledTime: "", description: "" });
     onClose();
   };
 
@@ -136,12 +186,20 @@ export function BookingModal({ isOpen, onClose, match, jobId }: BookingModalProp
             </div>
           </div>
           <div className="text-right">
-            <Badge className="bg-green-500/10 text-green-600 border-green-500/20 border font-bold">
-              {Math.round(match.matchScore * 100)}%
-            </Badge>
-            <div className="text-sm font-semibold text-chart-2 mt-1">
-              ~{match.estimatedCost.likelyCost} {t("common.mad")}
-            </div>
+            {match ? (
+              <>
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/20 border font-bold">
+                  {Math.round(match.matchScore * 100)}%
+                </Badge>
+                <div className="text-sm font-semibold text-chart-2 mt-1">
+                  ~{match.estimatedCost.likelyCost} {t("common.mad")}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm font-semibold text-chart-2">
+                {technician.hourlyRate} {t("common.mad")}/h
+              </div>
+            )}
           </div>
         </div>
 
@@ -206,6 +264,36 @@ export function BookingModal({ isOpen, onClose, match, jobId }: BookingModalProp
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="flex items-center justify-between">
+              <span>Description détaillée</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleEnhanceWithAI}
+                disabled={isEnhancing}
+                className="text-primary hover:text-primary/80 h-auto py-1 px-2"
+                data-testid="button-enhance-ai"
+              >
+                {isEnhancing ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4 mr-1" />
+                )}
+                Améliorer avec IA
+              </Button>
+            </Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Décrivez votre problème en détail..."
+              rows={3}
+              data-testid="textarea-description"
+            />
           </div>
 
           <div className="flex gap-3 pt-4">
