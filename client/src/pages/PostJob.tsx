@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AIAnalysisPanel } from "@/components/job/AIAnalysisPanel";
 import { CostEstimateCard } from "@/components/job/CostEstimateCard";
-import { TechnicianCard } from "@/components/technician/TechnicianCard";
+import { TechnicianMatchCard } from "@/components/technician/TechnicianCard";
 import { BookingModal } from "@/components/booking/BookingModal";
 import { UpsellSuggestions } from "@/components/booking/UpsellSuggestions";
 import { useI18n } from "@/lib/i18n";
@@ -383,7 +383,7 @@ export default function PostJob() {
 
                 <div className="space-y-6">
                   {matches.map((match, index) => (
-                    <TechnicianCard
+                    <TechnicianMatchCard
                       key={match.technician.id}
                       match={match}
                       rank={index + 1}

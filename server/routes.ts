@@ -99,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Get all technicians and match
-      const allTechnicians = await storage.getAllTechnicians();
+      const allTechnicians = await storage.getAllTechniciansWithUsers();
       const matches = await matchTechnicians(
         allTechnicians,
         description,
@@ -219,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!job) {
           return res.status(404).json({ error: "Job not found" });
         }
-        estimatedCost = job.likelyCost;
+        estimatedCost = job.likelyCost || estimatedCost;
       }
 
       const booking = await storage.createBooking({

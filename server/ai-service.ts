@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
-import type { JobAnalysis, CostEstimate, TechnicianMatch, UpsellSuggestion, Technician } from "@shared/schema";
+import type { JobAnalysis, CostEstimate, TechnicianMatch, UpsellSuggestion, TechnicianWithUser } from "@shared/schema";
 
 // Check for API keys - gracefully degrade to rule-based analysis if not available
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
@@ -201,7 +201,7 @@ export async function estimateCost(
 }
 
 export async function matchTechnicians(
-  technicians: Technician[],
+  technicians: TechnicianWithUser[],
   description: string,
   service: string,
   city: string,
@@ -213,7 +213,7 @@ export async function matchTechnicians(
 
   for (const tech of technicians) {
     // Filter by city and service
-    if (tech.city.toLowerCase() !== city.toLowerCase()) continue;
+    if (!tech.city || tech.city.toLowerCase() !== city.toLowerCase()) continue;
     if (!tech.services.includes(service)) continue;
 
     // Calculate match factors
@@ -276,7 +276,7 @@ export async function matchTechnicians(
 }
 
 async function generateMatchExplanation(
-  tech: Technician,
+  tech: TechnicianWithUser,
   score: number,
   service: string,
   description: string
@@ -308,7 +308,7 @@ Be concise and focus on the most relevant qualifications.`,
   }
 }
 
-function getDefaultExplanation(tech: Technician, score: number): string {
+function getDefaultExplanation(tech: TechnicianWithUser, score: number): string {
   return `${tech.name} est un match à ${Math.round(score * 100)}% grâce à ${tech.yearsExperience} ans d'expérience et une note de ${tech.rating}/5 (${tech.reviewCount} avis). ${tech.isAvailable ? "Disponible maintenant." : ""}`;
 }
 
@@ -404,7 +404,7 @@ function detectLanguage(description: string): "fr" | "ar" | "en" {
   return "fr";
 }
 
-function calculateSpecializationScore(tech: Technician, service: string, description: string): number {
+function calculateSpecializationScore(tech: TechnicianWithUser, service: string, description: string): number {
   let score = 0.7; // Base score for matching service
   
   // Bonus for relevant skills mentioned in description
