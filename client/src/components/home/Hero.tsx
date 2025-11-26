@@ -42,9 +42,9 @@ export function Hero() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
         {/* AI Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary mb-8">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent mb-8">
           <Sparkles className="h-4 w-4" />
-          <span className="text-sm font-medium">Propulsé par 47 modèles IA</span>
+          <span className="text-sm font-medium">Matching intelligent des techniciens</span>
         </div>
 
         {/* Main Heading */}

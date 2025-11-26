@@ -20,7 +20,7 @@ export function Footer() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              La plateforme intelligente pour connecter les clients avec les meilleurs artisans au Maroc.
+              La plateforme intelligente pour connecter les clients avec les meilleurs techniciens au Maroc.
             </p>
           </div>
 
@@ -74,7 +74,6 @@ export function Footer() {
 
         <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} AlloBricolage. Tous droits réservés.</p>
-          <p className="mt-2">Propulsé par 47 modèles d'intelligence artificielle</p>
         </div>
       </div>
     </footer>

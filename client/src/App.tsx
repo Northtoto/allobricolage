@@ -6,9 +6,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { I18nProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
+import { DarijaChat } from "@/components/chat/DarijaChat";
 import Home from "@/pages/Home";
 import PostJob from "@/pages/PostJob";
 import TechnicianDashboard from "@/pages/TechnicianDashboard";
+import ClientDashboard from "@/pages/ClientDashboard";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ClientSignup from "@/pages/ClientSignup";
@@ -21,6 +23,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/post-job" component={PostJob} />
       <Route path="/technician-dashboard" component={TechnicianDashboard} />
+      <Route path="/client-dashboard" component={ClientDashboard} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/signup/client" component={ClientSignup} />
@@ -39,6 +42,7 @@ function App() {
             <TooltipProvider>
               <Toaster />
               <Router />
+              <DarijaChat />
             </TooltipProvider>
           </I18nProvider>
         </AuthProvider>

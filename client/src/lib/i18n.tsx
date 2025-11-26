@@ -13,20 +13,21 @@ const translations: Record<Language, Record<string, string>> = {
   fr: {
     // Navigation
     "nav.home": "Accueil",
-    "nav.findTech": "Trouver un Artisan",
+    "nav.findTech": "Trouver un Technicien",
     "nav.postJob": "Publier un Travail",
-    "nav.forTech": "Pour les Artisans",
+    "nav.forTech": "Espace Technicien",
+    "nav.forClient": "Espace Client",
     "nav.dashboard": "Tableau de Bord",
     
     // Hero
-    "hero.title": "Trouvez le Meilleur Artisan",
+    "hero.title": "Trouvez le Meilleur Technicien",
     "hero.titleHighlight": "en 2 Minutes",
-    "hero.subtitle": "47 modèles IA analysent votre demande pour vous connecter avec l'artisan parfait. Plomberie, électricité, peinture et plus encore.",
-    "hero.searchPlaceholder": "Décrivez votre problème... (ex: fuite d'eau dans la cuisine)",
-    "hero.cta": "Trouver un Artisan",
-    "hero.trust1": "47 Modèles IA",
+    "hero.subtitle": "Notre plateforme intelligente analyse votre demande pour vous connecter avec le technicien parfait. Plomberie, électricité, peinture et plus encore.",
+    "hero.searchPlaceholder": "Rechercher un technicien... (ex: plombier à Casablanca)",
+    "hero.cta": "Trouver un Technicien",
+    "hero.trust1": "Matching Intelligent",
     "hero.trust2": "500K+ Travaux Complétés",
-    "hero.trust3": "Matching en 2min",
+    "hero.trust3": "Réponse en 2min",
     
     // Services
     "services.title": "Nos Services",
@@ -52,8 +53,8 @@ const translations: Record<Language, Record<string, string>> = {
     "job.urgencyNormal": "Normal",
     "job.urgencyHigh": "Urgent",
     "job.urgencyEmergency": "Urgence",
-    "job.analyzing": "L'IA analyse votre demande...",
-    "job.findMatches": "Trouver des Artisans",
+    "job.analyzing": "Analyse de votre demande...",
+    "job.findMatches": "Trouver des Techniciens",
     
     // AI Analysis
     "ai.service": "Service détecté",
@@ -63,7 +64,7 @@ const translations: Record<Language, Record<string, string>> = {
     "ai.confidence": "Confiance IA",
     
     // Matching
-    "match.title": "Artisans Recommandés",
+    "match.title": "Techniciens Recommandés",
     "match.score": "Score de Match",
     "match.distance": "Distance",
     "match.response": "Temps de réponse",
@@ -86,7 +87,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Booking
     "booking.title": "Confirmer la Réservation",
-    "booking.technician": "Artisan",
+    "booking.technician": "Technicien",
     "booking.date": "Date",
     "booking.time": "Heure",
     "booking.name": "Votre nom",
@@ -95,12 +96,12 @@ const translations: Record<Language, Record<string, string>> = {
     "booking.success": "Réservation confirmée!",
     
     // Upsell
-    "upsell.title": "Pendant que l'artisan est là...",
+    "upsell.title": "Pendant que le technicien est là...",
     "upsell.discount": "de réduction",
     "upsell.add": "Ajouter",
     
     // Technician Dashboard
-    "tech.dashboard": "Tableau de Bord Artisan",
+    "tech.dashboard": "Tableau de Bord Technicien",
     "tech.earnings": "Revenus",
     "tech.pendingJobs": "Travaux en Attente",
     "tech.rating": "Note Moyenne",
@@ -108,6 +109,20 @@ const translations: Record<Language, Record<string, string>> = {
     "tech.accept": "Accepter",
     "tech.decline": "Refuser",
     "tech.newJob": "Nouvelle Demande",
+    
+    // Client Dashboard
+    "client.dashboard": "Tableau de Bord Client",
+    "client.activeJobs": "Travaux Actifs",
+    "client.completedJobs": "Travaux Terminés",
+    "client.totalSpent": "Total Dépensé",
+    "client.noJobs": "Aucun travail en cours",
+    "client.postFirst": "Publiez votre première demande",
+    
+    // DarijaChat
+    "chat.title": "Support DarijaChat",
+    "chat.placeholder": "Écrivez votre message en Darija, Français ou Arabe...",
+    "chat.send": "Envoyer",
+    "chat.greeting": "Salam! Ana hna bach n3awnek. Kifach nqdr n3awnek lyoum?",
     
     // Common
     "common.loading": "Chargement...",
@@ -126,20 +141,21 @@ const translations: Record<Language, Record<string, string>> = {
   ar: {
     // Navigation
     "nav.home": "الرئيسية",
-    "nav.findTech": "البحث عن حرفي",
+    "nav.findTech": "البحث عن تقني",
     "nav.postJob": "نشر عمل",
-    "nav.forTech": "للحرفيين",
+    "nav.forTech": "مساحة التقني",
+    "nav.forClient": "مساحة العميل",
     "nav.dashboard": "لوحة التحكم",
     
     // Hero
-    "hero.title": "اعثر على أفضل حرفي",
+    "hero.title": "اعثر على أفضل تقني",
     "hero.titleHighlight": "في دقيقتين",
-    "hero.subtitle": "47 نموذج ذكاء اصطناعي يحلل طلبك للربط مع الحرفي المثالي. سباكة، كهرباء، دهان والمزيد.",
-    "hero.searchPlaceholder": "صف مشكلتك... (مثال: تسرب مياه في المطبخ)",
-    "hero.cta": "البحث عن حرفي",
-    "hero.trust1": "47 نموذج ذكاء اصطناعي",
+    "hero.subtitle": "منصتنا الذكية تحلل طلبك للربط مع التقني المثالي. سباكة، كهرباء، دهان والمزيد.",
+    "hero.searchPlaceholder": "ابحث عن تقني... (مثال: سباك في الدار البيضاء)",
+    "hero.cta": "البحث عن تقني",
+    "hero.trust1": "مطابقة ذكية",
     "hero.trust2": "+500 ألف عمل مكتمل",
-    "hero.trust3": "مطابقة في دقيقتين",
+    "hero.trust3": "رد في دقيقتين",
     
     // Services
     "services.title": "خدماتنا",
@@ -165,18 +181,18 @@ const translations: Record<Language, Record<string, string>> = {
     "job.urgencyNormal": "عادي",
     "job.urgencyHigh": "مستعجل",
     "job.urgencyEmergency": "طوارئ",
-    "job.analyzing": "الذكاء الاصطناعي يحلل طلبك...",
-    "job.findMatches": "البحث عن حرفيين",
+    "job.analyzing": "تحليل طلبك...",
+    "job.findMatches": "البحث عن تقنيين",
     
     // AI Analysis
     "ai.service": "الخدمة المكتشفة",
     "ai.urgency": "مستوى الاستعجال",
     "ai.complexity": "التعقيد",
     "ai.duration": "المدة المقدرة",
-    "ai.confidence": "ثقة الذكاء الاصطناعي",
+    "ai.confidence": "الثقة",
     
     // Matching
-    "match.title": "الحرفيون الموصى بهم",
+    "match.title": "التقنيون الموصى بهم",
     "match.score": "درجة التطابق",
     "match.distance": "المسافة",
     "match.response": "وقت الاستجابة",
@@ -199,7 +215,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Booking
     "booking.title": "تأكيد الحجز",
-    "booking.technician": "الحرفي",
+    "booking.technician": "التقني",
     "booking.date": "التاريخ",
     "booking.time": "الوقت",
     "booking.name": "اسمك",
@@ -208,12 +224,12 @@ const translations: Record<Language, Record<string, string>> = {
     "booking.success": "تم تأكيد الحجز!",
     
     // Upsell
-    "upsell.title": "بينما الحرفي هنا...",
+    "upsell.title": "بينما التقني هنا...",
     "upsell.discount": "خصم",
     "upsell.add": "إضافة",
     
     // Technician Dashboard
-    "tech.dashboard": "لوحة تحكم الحرفي",
+    "tech.dashboard": "لوحة تحكم التقني",
     "tech.earnings": "الأرباح",
     "tech.pendingJobs": "الأعمال المعلقة",
     "tech.rating": "التقييم المتوسط",
@@ -221,6 +237,20 @@ const translations: Record<Language, Record<string, string>> = {
     "tech.accept": "قبول",
     "tech.decline": "رفض",
     "tech.newJob": "طلب جديد",
+    
+    // Client Dashboard
+    "client.dashboard": "لوحة تحكم العميل",
+    "client.activeJobs": "الأعمال النشطة",
+    "client.completedJobs": "الأعمال المكتملة",
+    "client.totalSpent": "المجموع المنفق",
+    "client.noJobs": "لا توجد أعمال حالية",
+    "client.postFirst": "انشر طلبك الأول",
+    
+    // DarijaChat
+    "chat.title": "دعم الدردشة",
+    "chat.placeholder": "اكتب رسالتك بالدارجة أو الفرنسية أو العربية...",
+    "chat.send": "إرسال",
+    "chat.greeting": "سلام! أنا هنا باش نعاونك. كيفاش نقدر نعاونك اليوم?",
     
     // Common
     "common.loading": "جاري التحميل...",

@@ -310,6 +310,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== CLIENT DASHBOARD ROUTES ====================
+
+  // Get client stats
+  app.get("/api/client/stats", async (_req, res) => {
+    try {
+      const stats = {
+        activeJobs: 2,
+        completedJobs: 15,
+        totalSpent: 12500,
+        averageRating: 4.7,
+      };
+      res.json(stats);
+    } catch (error) {
+      console.error("Get client stats error:", error);
+      res.status(500).json({ error: "Failed to get stats" });
+    }
+  });
+
+  // Get client jobs
+  app.get("/api/client/jobs", async (_req, res) => {
+    try {
+      const jobs = await storage.getAllJobs();
+      const clientJobs = jobs.map(job => ({
+        id: job.id,
+        description: job.description,
+        service: job.service,
+        city: job.city,
+        urgency: job.urgency,
+        status: job.status,
+        estimatedCost: job.likelyCost || 250,
+        createdAt: job.createdAt?.toISOString() || new Date().toISOString(),
+      }));
+      res.json(clientJobs);
+    } catch (error) {
+      console.error("Get client jobs error:", error);
+      res.status(500).json({ error: "Failed to get jobs" });
+    }
+  });
+
+  // ==================== DARIJA CHAT ROUTES ====================
+
+  // DarijaChat endpoint
+  app.post("/api/chat/darija", async (req, res) => {
+    try {
+      const { message, history } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // AI-powered Darija chat response
+      const { darijaChat } = await import("./ai-service");
+      const response = await darijaChat(message, history || []);
+      
+      res.json({ response });
+    } catch (error) {
+      console.error("DarijaChat error:", error);
+      // Fallback response in Darija
+      res.json({ 
+        response: "Smhli, kayna mochkila teknika. 3awed l message dyalek mn ba3d." 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

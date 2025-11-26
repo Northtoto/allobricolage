@@ -457,3 +457,90 @@ function estimateDuration(complexity: string): string {
     default: return "1-2 heures";
   }
 }
+
+// DarijaChat - AI-powered customer support in Moroccan Darija
+export async function darijaChat(
+  message: string, 
+  history: Array<{ role: string; content: string }>
+): Promise<string> {
+  // Common Darija responses for fallback
+  const darijaResponses = [
+    "Salam! Ana hna bach n3awnek. Chouf, ila 3ndek chi mochkil f dar dyalek, kayna techniciens zwinin 3ndna.",
+    "Ahlan! Kifach nqdr n3awnek lyoum? 3ndna plombier, khrba2i, w bzaf d services khra.",
+    "Mrhba bik! Gol lia chno kayn w ghadi n3awnek tlqa technicien mezyan.",
+  ];
+
+  // If no AI is available, use fallback responses
+  if (!openai && !gemini) {
+    const randomIndex = Math.floor(Math.random() * darijaResponses.length);
+    return darijaResponses[randomIndex];
+  }
+
+  try {
+    // Use OpenAI if available
+    if (openai) {
+      const response = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "system",
+            content: `You are a friendly customer support assistant for AlloBricolage, a Moroccan handyman marketplace.
+
+IMPORTANT RULES:
+1. Always respond in Moroccan Darija (using Latin script like "Salam, kifach nqdr n3awnek?")
+2. Be warm, helpful, and professional
+3. Guide users to find technicians for their home repair needs
+4. Available services: plomberie (plumber), electricite (electrician), peinture (painter), menuiserie (carpenter), climatisation (AC), maconnerie (mason), carrelage (tiles), serrurerie (locksmith), jardinage (gardener), nettoyage (cleaning)
+5. Moroccan cities we serve: Casablanca, Rabat, Marrakech, Fes, Tanger, Agadir, Meknes, Oujda, Kenitra, Tetouan
+6. Keep responses concise and helpful
+7. Use common Darija phrases like: Salam, Mrhba, Ana hna bach n3awnek, Wakha, La bsa, Chokran
+
+Example phrases:
+- "Salam! Kifach nqdr n3awnek lyoum?"
+- "Ana ghadi n3awnek tlqa technicien mezyan."
+- "Gol lia chno kayn f dar dyalek w ghadi nchouf lk chi had."
+- "Wakha, daba ghadi nchouf lk acher techniciens 3ndna."`
+          },
+          ...history.map(h => ({
+            role: h.role as "user" | "assistant",
+            content: h.content
+          })),
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        max_completion_tokens: 256,
+      });
+
+      return response.choices[0].message.content || darijaResponses[0];
+    }
+
+    // Use Gemini as fallback
+    if (gemini) {
+      const historyContext = history.map(h => `${h.role}: ${h.content}`).join("\n");
+      
+      const response = await gemini.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `You are a customer support assistant for AlloBricolage, a Moroccan handyman marketplace.
+        
+Always respond in Moroccan Darija (Latin script). Be helpful and friendly.
+
+Previous conversation:
+${historyContext}
+
+User: ${message}
+
+Respond in Darija:`,
+      });
+
+      return response.text || darijaResponses[0];
+    }
+
+  } catch (error) {
+    console.error("DarijaChat AI error:", error);
+  }
+
+  // Fallback response
+  return darijaResponses[Math.floor(Math.random() * darijaResponses.length)];
+}

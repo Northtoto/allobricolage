@@ -26,10 +26,20 @@ export function Header() {
     }
   };
 
+  const getDashboardLink = () => {
+    if (!user) return null;
+    if (user.role === "technician") {
+      return { href: "/technician-dashboard", label: t("nav.forTech") };
+    }
+    return { href: "/client-dashboard", label: t("nav.forClient") };
+  };
+
+  const dashboardLink = getDashboardLink();
+  
   const navLinks = [
     { href: "/", label: t("nav.home") },
     { href: "/post-job", label: t("nav.postJob") },
-    { href: "/technician-dashboard", label: t("nav.forTech") },
+    ...(dashboardLink ? [dashboardLink] : []),
   ];
 
   return (
