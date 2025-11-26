@@ -1,0 +1,74 @@
+Based on the screenshots provided (`ccc.jpg` showing a syntax error log and `cc.png` showing a broken modal overlay), the issue is a combination of a **critical build error** preventing the code from running and a **UI/Logic styling issue** with the booking modal.
+
+Here is the **Master Prompt** to fix the syntax error immediately and repair the booking flow so it works exactly like the design.
+
+-----
+
+### **Copy and Paste this into Replit Agent:**
+
+````xml
+<identity>
+You are an AI programming assistant acting as the Lead Full-Stack Architect for "AlloBricolage."
+</identity>
+
+<project_context>
+**Current Critical Status:**
+1. **BUILD BROKEN:** As seen in the logs, there is a syntax error (`Unexpected token 'div'`, stray closing brace `}`) in `src/app/dashboard/history/page.tsx` (or a related file) that is crashing the build.
+2. **UI BUG:** The Booking Modal (seen in the screenshot) is rendering *inline* or with incorrect z-index/positioning, obscuring the technician list instead of appearing as a clean centered overlay.
+3. **LOGIC BUG:** Users report technicians appear "unavailable" or the booking button fails to trigger the API correctly.
+
+**Goal:** Fix the build immediately, then ensure the Booking Modal appears correctly and successfully submits a booking for "Immédiat" technicians like Youssef and Karim.
+</project_context>
+
+<task_instructions>
+Execute this 3-Step Rescue Plan:
+
+**STEP 1: EMERGENCY SYNTAX FIX (Priority 0)**
+Scan `src/app/dashboard/history/page.tsx` (and `client/src/pages/TechnicianProfile.tsx` if modified recently).
+- Look for a stray `}` or an unclosed `<div>`.
+- **Action:** Remove the incorrect closing brace or fix the JSX structure so the build passes. 
+- *Constraint:* Do not change logic here, just fix the syntax error so the app compiles.
+
+**STEP 2: FIX BOOKING MODAL UI (Z-Index & Positioning)**
+Refactor `BookingModal.tsx`. It currently looks like it's pushing layout content around.
+- **Action:** Ensure the Modal uses a Portal or fixed positioning.
+- **Code Pattern:**
+  ```tsx
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+      {/* Modal Content */}
+    </div>
+  </div>
+````
+
+  - **Close Button:** Ensure there is a visible "X" or "Annuler" button that clears the selected technician state.
+
+**STEP 3: FIX "AVAILABILITY" & DIRECT BOOKING LOGIC**
+The user reports technicians are "not available" for booking.
+
+  - **Logic Check:** In `TechnicianCard.tsx`, ensure the "Réserver" button is **disabled only if** `availability === 'Indisponible'`.
+  - **Force Enable:** For Youssef and Karim (who are 'Immédiat'), the button MUST be clickable.
+  - **API Fix:** Ensure the `handleBooking` function sends:
+      - `status`: "pending"
+      - `technicianId`: The ID from the card.
+      - `jobId`: "direct" (If the backend requires a job ID, generate this placeholder so the booking doesn't fail).
+
+\</task\_instructions\>
+
+\<response\_protocol\>
+
+1.  Fix the syntax error first and confirm the build passes.
+2.  Apply the UI fixes to the Modal.
+3.  Verify the Booking Logic allows clicking "Réserver".
+    \</response\_protocol\>
+
+<!-- end list -->
+
+```
+
+### **Why this prompt will work:**
+
+1.  **Addresses the Crash First:** In `ccc.jpg`, the right-hand panel explicitly shows a `Build Error`. You cannot fix the booking button if the app doesn't compile. Step 1 fixes this.
+2.  **Fixes the Overlay:** In `cc.png`, the modal is "stuck" in the middle of the layout. The prompt enforces `fixed inset-0 z-50` which is the CSS standard for making a popup sit *on top* of everything else.
+3.  **Overrides Availability Logic:** It forces the code to respect the "Immédiat" badge seen in the screenshots, ensuring the button is clickable for valid technicians.
+```
