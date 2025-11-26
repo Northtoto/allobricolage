@@ -1,7 +1,10 @@
 import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
+import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { randomUUID } from "crypto";
+
+const SALT_ROUNDS = 10;
 
 declare module "express-session" {
   interface SessionData {
@@ -18,16 +21,31 @@ declare global {
   }
 }
 
-// Simple password hashing (in production, use bcrypt)
-function hashPassword(password: string): string {
-  return Buffer.from(password).toString("base64");
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
 }
 
-function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 export function setupAuth(app: Express) {
+  // IMPORTANT: Middleware to load user MUST be registered BEFORE routes
+  app.use(async (req: Request, res: Response, next: NextFunction) => {
+    if (req.session?.userId) {
+      try {
+        const user = await storage.getUser(req.session.userId);
+        if (user) {
+          req.userId = user.id;
+          req.user = user;
+        }
+      } catch (error) {
+        console.error("Error loading user:", error);
+      }
+    }
+    next();
+  });
+
   // Get current user
   app.get("/api/auth/me", (req: Request, res: Response) => {
     if (!req.userId) {
@@ -53,7 +71,12 @@ export function setupAuth(app: Express) {
       }
 
       const user = await storage.getUserByUsername(username);
-      if (!user || !verifyPassword(password, user.password)) {
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const isValid = await verifyPassword(password, user.password);
+      if (!isValid) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
@@ -77,10 +100,14 @@ export function setupAuth(app: Express) {
   // Signup
   app.post("/api/auth/signup", async (req: Request, res: Response) => {
     try {
-      const { username, password, name, role } = req.body;
+      const { username, password, name, role, phone, city, services, yearsExperience, hourlyRate, bio } = req.body;
 
       if (!username || !password || !name || !role) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (role === "technician" && (!services || services.length === 0)) {
+        return res.status(400).json({ error: "Technicians must select at least one service" });
       }
 
       // Check if user exists
@@ -89,13 +116,32 @@ export function setupAuth(app: Express) {
         return res.status(409).json({ error: "User already exists" });
       }
 
+      // Hash password with bcrypt
+      const hashedPassword = await hashPassword(password);
+
       // Create user
       const user = await storage.createUser({
         username,
-        password: hashPassword(password),
+        password: hashedPassword,
         role,
         name,
+        phone,
+        city,
       });
+
+      // If technician, create professional profile
+      if (role === "technician") {
+        await storage.createTechnician({
+          userId: user.id,
+          services: services || [],
+          skills: [],
+          yearsExperience: parseInt(yearsExperience) || 1,
+          hourlyRate: parseInt(hourlyRate) || 150,
+          bio: bio || null,
+          isVerified: false,
+          isAvailable: true,
+        });
+      }
 
       // Set session
       if (req.session) {
@@ -122,21 +168,6 @@ export function setupAuth(app: Express) {
       });
     } else {
       res.json({ success: true });
-    }
-  });
-
-  // Middleware to load user
-  app.use((req: Request, res: Response, next) => {
-    if (req.session?.userId) {
-      storage.getUser(req.session.userId).then((user) => {
-        if (user) {
-          req.userId = user.id;
-          req.user = user;
-        }
-        next();
-      });
-    } else {
-      next();
     }
   });
 }

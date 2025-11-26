@@ -14,7 +14,7 @@ import { MOROCCAN_CITIES } from "@shared/schema";
 
 export default function ClientSignup() {
   const [, setLocation] = useLocation();
-  const { signup } = useAuth();
+  const { signupClient } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -47,7 +47,14 @@ export default function ClientSignup() {
 
     setIsLoading(true);
     try {
-      await signup(formData.username, formData.password, formData.name, "client");
+      await signupClient({
+        username: formData.username,
+        password: formData.password,
+        name: formData.name,
+        phone: formData.phone,
+        city: formData.city,
+        businessName: formData.businessName,
+      });
       toast({ title: "Bienvenue!", description: "Votre compte client a été créé avec succès" });
       setLocation("/");
     } catch (error) {

@@ -8,11 +8,34 @@ export interface AuthUser {
   role: "client" | "technician";
 }
 
+interface TechnicianSignupData {
+  username: string;
+  password: string;
+  name: string;
+  phone: string;
+  city: string;
+  services: string[];
+  yearsExperience?: string;
+  hourlyRate?: string;
+  bio?: string;
+}
+
+interface ClientSignupData {
+  username: string;
+  password: string;
+  name: string;
+  phone: string;
+  city: string;
+  businessName?: string;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   signup: (username: string, password: string, name: string, role: "client" | "technician") => Promise<void>;
+  signupTechnician: (data: TechnicianSignupData) => Promise<void>;
+  signupClient: (data: ClientSignupData) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -54,13 +77,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
   };
 
+  const signupTechnician = async (data: TechnicianSignupData) => {
+    const res = await apiRequest("POST", "/api/auth/signup", { 
+      ...data, 
+      role: "technician" 
+    });
+    const userData = await res.json();
+    setUser(userData);
+  };
+
+  const signupClient = async (data: ClientSignupData) => {
+    const res = await apiRequest("POST", "/api/auth/signup", { 
+      ...data, 
+      role: "client" 
+    });
+    const userData = await res.json();
+    setUser(userData);
+  };
+
   const logout = async () => {
     await apiRequest("POST", "/api/auth/logout", {});
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, signupTechnician, signupClient, logout, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

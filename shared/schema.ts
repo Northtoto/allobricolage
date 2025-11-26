@@ -33,27 +33,36 @@ export const URGENCY_LEVELS = ["low", "normal", "high", "emergency"] as const;
 export const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
 export const BOOKING_STATUS = ["pending", "accepted", "in_progress", "completed", "cancelled"] as const;
 
-// Technicians table
+// Users table for clients and technicians
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  role: text("role").notNull().default("client"),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  city: text("city"),
+});
+
+// Technicians table - professional metadata linked to users
 export const technicians = pgTable("technicians", {
   id: varchar("id").primaryKey(),
-  name: text("name").notNull(),
-  photo: text("photo"),
-  phone: text("phone").notNull(),
-  city: text("city").notNull(),
+  userId: varchar("user_id").notNull().unique(),
   services: text("services").array().notNull(),
-  skills: text("skills").array().notNull(),
+  skills: text("skills").array().notNull().default([]),
+  bio: text("bio"),
+  photo: text("photo"),
   rating: real("rating").notNull().default(0),
   reviewCount: integer("review_count").notNull().default(0),
   completedJobs: integer("completed_jobs").notNull().default(0),
   responseTimeMinutes: integer("response_time_minutes").notNull().default(30),
   completionRate: real("completion_rate").notNull().default(0.95),
   yearsExperience: integer("years_experience").notNull().default(1),
-  hourlyRate: integer("hourly_rate").notNull(),
+  hourlyRate: integer("hourly_rate").notNull().default(150),
   isVerified: boolean("is_verified").notNull().default(false),
   isAvailable: boolean("is_available").notNull().default(true),
   latitude: real("latitude"),
   longitude: real("longitude"),
-  bio: text("bio"),
   languages: text("languages").array().notNull().default(["français", "arabe"]),
 });
 
@@ -95,32 +104,46 @@ export const bookings = pgTable("bookings", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Users table for clients and technicians
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  role: text("role").notNull().default("client"),
-  name: text("name"),
-  phone: text("phone"),
-  city: text("city"),
-});
-
 // Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertTechnicianSchema = createInsertSchema(technicians).omit({ id: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 
 // Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Technician = typeof technicians.$inferSelect;
 export type InsertTechnician = z.infer<typeof insertTechnicianSchema>;
 export type Job = typeof jobs.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+
+// Combined technician with user info for display
+export interface TechnicianWithUser {
+  id: string;
+  userId: string;
+  name: string;
+  phone: string | null;
+  city: string | null;
+  services: string[];
+  skills: string[];
+  bio: string | null;
+  photo: string | null;
+  rating: number;
+  reviewCount: number;
+  completedJobs: number;
+  responseTimeMinutes: number;
+  completionRate: number;
+  yearsExperience: number;
+  hourlyRate: number;
+  isVerified: boolean;
+  isAvailable: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  languages: string[];
+}
 
 // AI Analysis types
 export interface JobAnalysis {
@@ -150,7 +173,7 @@ export interface CostEstimate {
 }
 
 export interface TechnicianMatch {
-  technician: Technician;
+  technician: TechnicianWithUser;
   matchScore: number;
   explanation: string;
   etaMinutes: number;

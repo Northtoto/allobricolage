@@ -29,7 +29,7 @@ const SERVICE_LABELS: Record<string, string> = {
 
 export default function TechnicianSignup() {
   const [, setLocation] = useLocation();
-  const { signup } = useAuth();
+  const { signupTechnician } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -78,7 +78,17 @@ export default function TechnicianSignup() {
 
     setIsLoading(true);
     try {
-      await signup(formData.username, formData.password, formData.name, "technician");
+      await signupTechnician({
+        username: formData.username,
+        password: formData.password,
+        name: formData.name,
+        phone: formData.phone,
+        city: formData.city,
+        services: selectedServices,
+        yearsExperience: formData.yearsExperience,
+        hourlyRate: formData.hourlyRate,
+        bio: formData.bio,
+      });
       toast({ 
         title: "Bienvenue!", 
         description: "Votre compte technicien a été créé. Notre équipe vérifiera votre profil sous 24h." 
