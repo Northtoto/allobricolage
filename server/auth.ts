@@ -1,4 +1,5 @@
 import { Express, Request, Response } from "express";
+import session from "express-session";
 import { storage } from "./storage";
 import { insertUserSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -8,7 +9,14 @@ declare global {
     interface Request {
       userId?: string;
       user?: any;
+      session?: session.Session & { userId?: string };
     }
+  }
+}
+
+declare module "express-session" {
+  interface SessionData {
+    userId?: string;
   }
 }
 
