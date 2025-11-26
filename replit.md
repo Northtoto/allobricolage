@@ -2,7 +2,7 @@
 
 ## Overview
 
-AlloBricolage is an AI-native marketplace platform connecting clients with handyman technicians in Morocco. The platform leverages 47 AI models to provide intelligent job matching, automated cost estimation, and dynamic pricing. Unlike traditional marketplace platforms that use AI as a support tool, AlloBricolage's core business logic is driven entirely by AI decision-making, from natural language job description parsing to technician matching algorithms.
+AlloBricolage is an AI-native marketplace platform connecting clients with handyman technicians in Morocco. The platform provides intelligent job matching, automated cost estimation, and dynamic pricing using Google Gemini and OpenAI models. The core business logic is driven by AI decision-making, from natural language job description parsing to technician matching algorithms.
 
 The platform supports bilingual operations (French and Arabic with RTL support) and focuses on 10 primary handyman services across major Moroccan cities including Casablanca, Rabat, Marrakech, and others.
 
@@ -47,6 +47,9 @@ RESTful API with route handlers organized in `server/routes.ts`. Key endpoints i
 - `/api/jobs/analyze` - AI-powered job description analysis
 - `/api/jobs` - Job creation with automatic technician matching
 - `/api/bookings` - Booking management with upsell suggestions
+- `/api/client/stats` - Client dashboard statistics
+- `/api/client/jobs` - Client job listings
+- `/api/chat/darija` - DarijaChat AI support (Darija/French/Arabic)
 
 **AI Service Layer**
 Centralized in `server/ai-service.ts`, implementing multiple AI-powered features:
@@ -56,6 +59,7 @@ Centralized in `server/ai-service.ts`, implementing multiple AI-powered features
 - Dynamic cost estimation with market comparison
 - Technician matching algorithm (XGBoost-style scoring)
 - Personalized upsell suggestions based on job context
+- DarijaChat: AI-powered customer support in Moroccan Darija
 
 **Data Storage Strategy**
 Dual-layer approach:
@@ -189,8 +193,29 @@ Required environment variables:
 - `shared/schema.ts` - Drizzle schemas with insert/select types
 - `client/src/lib/auth.tsx` - Auth context with signupClient, signupTechnician methods
 
+### DarijaChat Support Widget (November 2025)
+- **Component**: `client/src/components/chat/DarijaChat.tsx` - Floating chat widget
+- **Features**: Minimizable/expandable, trilingual support (Darija/French/Arabic)
+- **AI Backend**: Uses OpenAI GPT-5 or Gemini 2.5 Flash with Darija prompts
+- **Fallback**: Pre-defined Darija responses when AI unavailable
+
+### Client Dashboard (November 2025)
+- **Component**: `client/src/pages/ClientDashboard.tsx`
+- **Stats Cards**: Active jobs, completed jobs, total spent, average rating given
+- **Tabs**: Overview (recent jobs + help), Active jobs, History
+- **API**: `/api/client/stats`, `/api/client/jobs`
+
+### Terminology Update (November 2025)
+- Changed all references from "artisans" to "techniciens" in UI and translations
+- Removed "47 modèles IA" marketing references from Hero and Footer
+- Updated Hero badge to "Matching intelligent des techniciens"
+
+### Design System Colors
+- **Primary (Royal Blue)**: #1e40af / hsl(223, 71%, 40%)
+- **Accent (Sunset Orange)**: #ea580c / hsl(21, 90%, 48%)
+
 ### Recommended Next Steps
 1. Add Zod validation for signup payload (numeric ranges, phone formatting)
 2. Backfill hashed passwords for seeded test accounts
-3. Build remaining 23 screens (10 client, 10 technician, 3 admin)
-4. Implement 40+ REST API endpoints per specification
+3. Build remaining screens (technician dashboard improvements, admin screens)
+4. Implement remaining REST API endpoints per specification
