@@ -11,6 +11,8 @@ import PostJob from "@/pages/PostJob";
 import TechnicianDashboard from "@/pages/TechnicianDashboard";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import ClientSignup from "@/pages/ClientSignup";
+import TechnicianSignup from "@/pages/TechnicianSignup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +23,8 @@ function Router() {
       <Route path="/technician-dashboard" component={TechnicianDashboard} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/signup/client" component={ClientSignup} />
+      <Route path="/signup/technician" component={TechnicianSignup} />
       <Route component={NotFound} />
     </Switch>
   );

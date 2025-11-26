@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import session from "express-session";
+import MemoryStore from "memorystore";
 import { storage } from "./storage";
+import { setupAuth } from "./auth";
 import { 
   analyzeJobDescription, 
   estimateCost, 
@@ -10,7 +13,27 @@ import {
 import { insertJobSchema, insertBookingSchema } from "@shared/schema";
 import { z } from "zod";
 
+const MemoryStoreSession = MemoryStore(session);
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Setup session middleware
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "allobricolage-secret-key-2024",
+    resave: false,
+    saveUninitialized: false,
+    store: new MemoryStoreSession({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
+  // Setup authentication routes
+  setupAuth(app);
   
   // ==================== JOB ROUTES ====================
   
