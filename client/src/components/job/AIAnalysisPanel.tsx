@@ -21,8 +21,8 @@ export function AIAnalysisPanel({ analysis, isLoading }: AIAnalysisPanelProps) {
             <Loader2 className="h-5 w-5 text-primary animate-spin" />
           </div>
           <div>
-            <h3 className="font-semibold">Analyse IA en cours</h3>
-            <p className="text-sm text-muted-foreground">{t("job.analyzing")}</p>
+            <h3 className="font-semibold">{t("ai.loadingTitle")}</h3>
+            <p className="text-sm text-muted-foreground">{t("ai.loadingSubtitle")}</p>
           </div>
         </div>
         <div className="space-y-3">
@@ -39,7 +39,7 @@ export function AIAnalysisPanel({ analysis, isLoading }: AIAnalysisPanelProps) {
       <Card className="p-6 border-dashed">
         <div className="text-center text-muted-foreground">
           <Cpu className="h-10 w-10 mx-auto mb-3 opacity-50" />
-          <p className="text-sm">L'IA analysera votre demande automatiquement</p>
+          <p className="text-sm">{t("ai.emptyDescription")}</p>
         </div>
       </Card>
     );
@@ -62,41 +62,29 @@ export function AIAnalysisPanel({ analysis, isLoading }: AIAnalysisPanelProps) {
     }
   };
 
+  const serviceLabel = t(`services.${analysis.service}`);
   const urgencyLabels: Record<string, string> = {
-    emergency: "Urgence",
-    high: "Urgent",
-    normal: "Normal",
-    low: "Pas pressé",
+    emergency: t("job.urgencyEmergency"),
+    high: t("job.urgencyHigh"),
+    normal: t("job.urgencyNormal"),
+    low: t("job.urgencyLow"),
   };
 
   const complexityLabels: Record<string, string> = {
-    complex: "Complexe",
-    moderate: "Modéré",
-    simple: "Simple",
-  };
-
-  const serviceLabels: Record<string, string> = {
-    plomberie: "Plomberie",
-    electricite: "Électricité",
-    peinture: "Peinture",
-    menuiserie: "Menuiserie",
-    climatisation: "Climatisation",
-    maconnerie: "Maçonnerie",
-    carrelage: "Carrelage",
-    serrurerie: "Serrurerie",
-    jardinage: "Jardinage",
-    nettoyage: "Nettoyage",
+    complex: t("job.complexityComplex"),
+    moderate: t("job.complexityModerate"),
+    simple: t("job.complexitySimple"),
   };
 
   return (
     <Card className="p-6 border-primary/20 bg-primary/5">
-      <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-6">
         <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
           <Sparkles className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold">Analyse IA</h3>
-          <p className="text-sm text-muted-foreground">Résultats de l'analyse automatique</p>
+            <h3 className="font-semibold">{t("ai.cardTitle")}</h3>
+            <p className="text-sm text-muted-foreground">{t("ai.cardSubtitle")}</p>
         </div>
       </div>
 
@@ -108,7 +96,7 @@ export function AIAnalysisPanel({ analysis, isLoading }: AIAnalysisPanelProps) {
             {t("ai.service")}
           </div>
           <Badge variant="secondary" className="font-medium">
-            {serviceLabels[analysis.service] || analysis.service}
+            {serviceLabel !== `services.${analysis.service}` ? serviceLabel : analysis.service}
           </Badge>
         </div>
 
@@ -170,7 +158,7 @@ export function AIAnalysisPanel({ analysis, isLoading }: AIAnalysisPanelProps) {
         {/* Keywords */}
         {analysis.extractedKeywords && analysis.extractedKeywords.length > 0 && (
           <div className="pt-2">
-            <p className="text-xs text-muted-foreground mb-2">Mots-clés détectés:</p>
+            <p className="text-xs text-muted-foreground mb-2">{t("ai.keywords")}</p>
             <div className="flex flex-wrap gap-1">
               {analysis.extractedKeywords.map((keyword, idx) => (
                 <Badge key={idx} variant="outline" className="text-xs bg-background">

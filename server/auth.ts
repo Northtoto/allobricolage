@@ -6,8 +6,33 @@ import { storage } from "./storage";
 import { randomUUID } from "crypto";
 import { configureGoogleAuth } from "./auth/google-strategy";
 import { registerGoogleAuthRoutes } from "./auth/google-routes";
+import { rateLimit } from "./middleware/auth-guard";
+import { z } from "zod";
+import type { User } from "../shared/schema";
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12; // Increased from 10 to 12 for better security
+
+// Input validation schemas
+const loginSchema = z.object({
+  username: z.string().min(3).max(50).trim(),
+  password: z.string().min(6).max(100),
+});
+
+const signupSchema = z.object({
+  username: z.string().min(3).max(50).trim(),
+  password: z.string().min(8).max(100)
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  name: z.string().min(2).max(100).trim(),
+  role: z.enum(["client", "technician"]),
+  phone: z.string().optional(),
+  city: z.string().optional(),
+  services: z.array(z.string()).optional(),
+  yearsExperience: z.union([z.string(), z.number()]).optional(),
+  hourlyRate: z.union([z.string(), z.number()]).optional(),
+  bio: z.string().max(500).optional(),
+});
 
 declare module "express-session" {
   interface SessionData {
@@ -19,7 +44,7 @@ declare global {
   namespace Express {
     interface Request {
       userId?: string;
-      user?: any;
+      user?: User;
     }
   }
 }
@@ -75,31 +100,43 @@ export function setupAuth(app: Express) {
 
   // Get current user
   app.get("/api/auth/me", (req: Request, res: Response) => {
-    if (!req.userId) {
+    if (!req.userId || !req.user) {
       return res.status(401).json({ error: "Not authenticated" });
     }
-    
-    const user = req.user;
+
+    const user = req.user as User;
     res.json({
       id: user.id,
       username: user.username,
       name: user.name,
       role: user.role,
+      email: user.email,
+      profilePicture: user.profilePicture,
     });
   });
 
-  // Login
-  app.post("/api/auth/login", async (req: Request, res: Response) => {
+  // Login - Rate limited to 5 attempts per minute per IP
+  app.post("/api/auth/login", rateLimit(5, 60000), async (req: Request, res: Response) => {
     try {
-      const { username, password } = req.body;
-
-      if (!username || !password) {
-        return res.status(400).json({ error: "Missing username or password" });
+      // Validate input
+      const validation = loginSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          error: "Invalid input",
+          details: validation.error.issues.map(i => i.message).join(", ")
+        });
       }
+
+      const { username, password } = validation.data;
 
       const user = await storage.getUserByUsername(username);
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      // OAuth users don't have passwords - reject password login for them
+      if (!user.password) {
+        return res.status(401).json({ error: "Please sign in with Google" });
       }
 
       const isValid = await verifyPassword(password, user.password);
@@ -107,9 +144,22 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // Set session
+      // Set session and explicitly save it
       if (req.session) {
         req.session.userId = user.id;
+
+        // Explicitly save session
+        await new Promise<void>((resolve, reject) => {
+          req.session!.save((err) => {
+            if (err) {
+              console.error("Error saving session on login:", err);
+              reject(err);
+            } else {
+              console.log("✅ Login session saved for user:", user.id);
+              resolve();
+            }
+          });
+        });
       }
 
       res.json({
@@ -124,14 +174,19 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Signup
-  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+  // Signup - Rate limited to 3 attempts per 5 minutes per IP
+  app.post("/api/auth/signup", rateLimit(3, 300000), async (req: Request, res: Response) => {
     try {
-      const { username, password, name, role, phone, city, services, yearsExperience, hourlyRate, bio } = req.body;
-
-      if (!username || !password || !name || !role) {
-        return res.status(400).json({ error: "Missing required fields" });
+      // Validate input
+      const validation = signupSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          error: "Invalid input",
+          details: validation.error.issues.map(i => i.message).join(", ")
+        });
       }
+
+      const { username, password, name, role, phone, city, services, yearsExperience, hourlyRate, bio } = validation.data;
 
       if (role === "technician" && (!services || services.length === 0)) {
         return res.status(400).json({ error: "Technicians must select at least one service" });
@@ -162,17 +217,30 @@ export function setupAuth(app: Express) {
           userId: user.id,
           services: services || [],
           skills: [],
-          yearsExperience: parseInt(yearsExperience) || 1,
-          hourlyRate: parseInt(hourlyRate) || 150,
+          yearsExperience: parseInt(String(yearsExperience || 1)),
+          hourlyRate: parseInt(String(hourlyRate || 150)),
           bio: bio || null,
           isVerified: false,
           isAvailable: true,
         });
       }
 
-      // Set session
+      // Set session and explicitly save it
       if (req.session) {
         req.session.userId = user.id;
+
+        // Explicitly save session
+        await new Promise<void>((resolve, reject) => {
+          req.session!.save((err) => {
+            if (err) {
+              console.error("Error saving session on signup:", err);
+              reject(err);
+            } else {
+              console.log("✅ Signup session saved for user:", user.id);
+              resolve();
+            }
+          });
+        });
       }
 
       res.status(201).json({

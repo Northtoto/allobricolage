@@ -11,19 +11,7 @@ import { Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { useState } from "react";
 import type { TechnicianWithUser } from "@shared/schema";
 import { SERVICE_CATEGORIES, MOROCCAN_CITIES } from "@shared/schema";
-
-const SERVICE_LABELS: Record<string, string> = {
-  plomberie: "Plomberie",
-  electricite: "Électricité",
-  peinture: "Peinture",
-  menuiserie: "Menuiserie",
-  climatisation: "Climatisation",
-  maconnerie: "Maçonnerie",
-  carrelage: "Carrelage",
-  serrurerie: "Serrurerie",
-  jardinage: "Jardinage",
-  nettoyage: "Nettoyage",
-};
+import { getServiceLabel } from "@/lib/serviceLabels";
 
 export default function TechnicianDirectory() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -112,7 +100,7 @@ export default function TechnicianDirectory() {
                       }`}
                       data-testid={`filter-service-${service}`}
                     >
-                      {SERVICE_LABELS[service] || service}
+                      {getServiceLabel(service)}
                     </button>
                   ))}
                 </div>
@@ -164,7 +152,7 @@ export default function TechnicianDirectory() {
                         className="cursor-pointer"
                         onClick={() => setSelectedService(null)}
                       >
-                        {SERVICE_LABELS[selectedService]} ×
+                        {getServiceLabel(selectedService)} ×
                       </Badge>
                     )}
                     {selectedCity && (

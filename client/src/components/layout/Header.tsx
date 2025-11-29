@@ -49,18 +49,21 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-border/20 glass-enhanced shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex h-20 items-center justify-between gap-4">
-          {/* Logo */}
+          {/* Logo with 3D Effect */}
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary">
-                <Wrench className="h-5 w-5 text-primary-foreground" />
+            <div className="flex items-center gap-3 cursor-pointer group" data-testid="link-home">
+              <div className="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 card-3d perspective-container animate-pulse-glow">
+                <Wrench className="h-6 w-6 text-primary-foreground group-hover:rotate-12 transition-transform duration-300" />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-lg leading-tight">AlloBricolage</span>
-                <span className="text-xs text-muted-foreground leading-tight">Powered by AI</span>
+                <span className="font-bold text-xl leading-tight gradient-text-animated">AlloBricolage</span>
+                <span className="text-xs text-muted-foreground leading-tight flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  Powered by AI
+                </span>
               </div>
             </div>
           </Link>
@@ -154,8 +157,8 @@ export function Header() {
 
             {/* CTA Button - Desktop */}
             <Link href="/post-job" className="hidden md:block">
-              <Button className="rounded-full px-5 shadow-lg shadow-primary/20" data-testid="button-header-post-job">
-                <Building2 className="h-4 w-4 mr-2" />
+              <Button className="rounded-full px-6 shadow-2xl shadow-primary/40 hover:shadow-primary/70 transition-all hover:scale-110 animate-pulse-glow group bg-gradient-to-r from-primary to-accent hover:from-accent hover:to-primary" data-testid="button-header-post-job">
+                <Building2 className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" />
                 Réserver un artisan
               </Button>
             </Link>

@@ -24,6 +24,26 @@ import {
 
 type PaymentMethod = "cmi" | "cashplus" | "bank_transfer";
 
+interface BookingData {
+  id: string;
+  estimatedCost?: number;
+  clientPhone?: string;
+  clientName?: string;
+  status?: string;
+  service?: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
+}
+
+interface BankDetails {
+  reference?: string;
+  companyName?: string;
+  bankName?: string;
+  rib?: string;
+  iban?: string;
+  amount?: number;
+}
+
 export default function Payment() {
   const [, params] = useRoute("/payment/:bookingId");
   const [, setLocation] = useLocation();
@@ -37,13 +57,13 @@ export default function Payment() {
   const [copied, setCopied] = useState(false);
 
   // Fetch booking details
-  const { data: booking, isLoading: bookingLoading } = useQuery({
+  const { data: booking, isLoading: bookingLoading } = useQuery<BookingData>({
     queryKey: [`/api/bookings/${bookingId}`],
     enabled: !!bookingId,
   });
 
   // Fetch bank transfer details
-  const { data: bankDetails } = useQuery({
+  const { data: bankDetails } = useQuery<BankDetails>({
     queryKey: [`/api/payment/bank-transfer/details?bookingId=${bookingId}`],
     enabled: paymentMethod === "bank_transfer" && !!bookingId,
   });
@@ -173,7 +193,7 @@ export default function Payment() {
           {/* Back button */}
           <Button
             variant="ghost"
-            onClick={() => setLocation(-1)}
+            onClick={() => window.history.back()}
             className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -301,7 +321,7 @@ export default function Payment() {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => handleCopyToClipboard(bankDetails.rib)}
+                                  onClick={() => handleCopyToClipboard(bankDetails.rib || "")}
                                 >
                                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                 </Button>
@@ -314,7 +334,7 @@ export default function Payment() {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => handleCopyToClipboard(bankDetails.iban)}
+                                  onClick={() => handleCopyToClipboard(bankDetails.iban || "")}
                                 >
                                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                 </Button>
@@ -427,5 +447,7 @@ export default function Payment() {
     </div>
   );
 }
+
+
 
 

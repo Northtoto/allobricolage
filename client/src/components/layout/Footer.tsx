@@ -11,23 +11,29 @@ export function Footer() {
   ];
 
   return (
-    <footer id="contact" className="bg-gradient-to-b from-background via-card to-background border-t border-border/50 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          {/* Brand Voice */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-                <Wrench className="h-5 w-5" />
+    <footer id="contact" className="relative mt-auto overflow-hidden border-t border-border/20">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-card/50 to-background" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(30,64,175,0.08)_0%,transparent_70%)]" />
+
+      <div className="max-w-7xl mx-auto px-4 py-20 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+          {/* Brand Voice with 3D Effect */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 group">
+              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-xl shadow-primary/30 card-3d perspective-container animate-pulse-glow">
+                <Wrench className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
               </div>
               <div>
-                <p className="font-bold text-xl">AlloBricolage</p>
-                <p className="text-xs text-muted-foreground tracking-wide">Innovation & artisans du Maroc</p>
+                <p className="font-bold text-2xl gradient-text-animated">AlloBricolage</p>
+                <p className="text-xs text-muted-foreground tracking-wide flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  Innovation & artisans
+                </p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Nous réinventons le bricolage B2B avec des artisans vérifiés, une IA locale et un service pensé pour Casablanca, Rabat,
-              Marrakech et toutes les villes dynamiques du Royaume.
+              Réinventons le bricolage B2B avec des artisans vérifiés, une IA locale et un service pensé pour tout le Maroc.
             </p>
           </div>
 
@@ -75,9 +81,9 @@ export function Footer() {
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  className="p-2 rounded-full border border-border/70 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                  className="p-3 rounded-xl glass-enhanced text-muted-foreground hover:text-primary hover:shadow-lg hover:shadow-primary/30 transition-all hover:scale-110 card-3d group"
                 >
-                  <social.icon className="h-4 w-4" />
+                  <social.icon className="h-5 w-5 group-hover:rotate-12 transition-transform" />
                 </a>
               ))}
             </div>

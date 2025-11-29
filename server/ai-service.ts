@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { JobAnalysis, CostEstimate, TechnicianMatch, UpsellSuggestion, TechnicianWithUser } from "@shared/schema";
 
 // Check for API keys - gracefully degrade to rule-based analysis if not available
@@ -12,7 +12,8 @@ const openai = hasOpenAIKey ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 // DON'T DELETE THIS COMMENT
 // Note that the newest Gemini model series is "gemini-2.5-flash"
 // do not change this unless explicitly requested by the user
-const gemini = hasGeminiKey ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! }) : null;
+const genAI = hasGeminiKey ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY!) : null;
+const gemini = genAI ? genAI.getGenerativeModel({ model: "gemini-2.5-flash" }) : null;
 
 // Log API key status on startup
 if (!hasOpenAIKey) console.log("AlloBricolage: OpenAI API key not configured - using rule-based analysis");
@@ -93,7 +94,7 @@ Return JSON with this exact structure:
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
-    
+
     return {
       service: result.service || detectService(description),
       subServices: result.subServices || [],
@@ -120,12 +121,132 @@ Return JSON with this exact structure:
   }
 }
 
+
+export async function analyzeJobImage(
+  imageBase64: string,
+  city: string,
+  userDescription?: string
+): Promise<JobAnalysis> {
+  // If Gemini is not configured, fallback to text analysis if description exists, or default
+  if (!gemini) {
+    console.log("Gemini not configured for image analysis");
+    if (userDescription) {
+      return analyzeJobDescription(userDescription, city, "normal");
+    }
+    return {
+      service: "plomberie", // Default fallback
+      subServices: [],
+      urgency: "normal",
+      complexity: "moderate",
+      estimatedDuration: "1-2 heures",
+      extractedKeywords: [],
+      confidence: 0.5,
+      language: "fr",
+    };
+  }
+
+  try {
+    const prompt = `You are an EXPERT home repair diagnostician for AlloBricolage, Morocco's leading B2B maintenance platform.
+
+CONTEXT:
+- Location: ${city}, Morocco
+- User description: "${userDescription || "No additional description provided"}"
+
+YOUR MISSION:
+Analyze this image with PRECISION to identify the maintenance issue and provide accurate diagnostics.
+
+AVAILABLE SERVICES (choose ONE primary):
+1. plomberie (Plumbing) - Leaks, pipes, faucets, drains, water heaters
+2. electricite (Electrical) - Wiring, outlets, switches, circuit breakers, lighting
+3. peinture (Painting) - Wall damage, peeling paint, cracks, surface prep
+4. menuiserie (Carpentry) - Doors, windows, wood fixtures, furniture
+5. climatisation (HVAC) - AC units, ventilation, heating systems
+6. maconnerie (Masonry) - Walls, concrete, bricks, structural issues
+7. carrelage (Tiling) - Floor/wall tiles, grout, ceramic work
+8. serrurerie (Locksmith) - Locks, doors, security systems
+9. jardinage (Gardening) - Plants, landscaping, outdoor maintenance
+10. nettoyage (Cleaning) - Deep cleaning, sanitation
+
+URGENCY ASSESSMENT RULES:
+- EMERGENCY: Active water leak, electrical sparks, fire hazard, gas leak, structural collapse
+- HIGH: Water damage spreading, non-functional critical systems, security breach
+- NORMAL: Visible damage but contained, aesthetics issues, preventive maintenance
+- LOW: Cosmetic issues, minor wear, scheduled maintenance
+
+COMPLEXITY EVALUATION:
+- SIMPLE: Single-point fix, <1 hour, basic tools, one technician
+- MODERATE: Multi-point repair, 1-3 hours, standard equipment, may need helper
+- COMPLEX: System replacement, >3 hours, specialized tools/materials, multiple technicians
+
+RESPONSE FORMAT (JSON only):
+{
+  "service": "primary_service_category",
+  "subServices": ["specific_task_1", "specific_task_2"],
+  "urgency": "emergency|high|normal|low",
+  "complexity": "simple|moderate|complex",
+  "estimatedDuration": "X-Y heures" (realistic time range),
+  "extractedKeywords": ["keyword1", "keyword2", "keyword3"],
+  "confidence": 0.XX (0.7-1.0 range),
+  "visualDescription": "Detailed description of what you see in the image (2-3 sentences)",
+  "recommendations": ["safety_tip_or_action_1", "safety_tip_or_action_2"]
+}
+
+IMPORTANT:
+- Base urgency on VISIBLE damage, not assumptions
+- Be conservative with complexity estimates
+- Provide confidence score based on image clarity
+- If image is unclear, set confidence < 0.7 and explain in visualDescription`;
+
+    // Remove header if present (data:image/jpeg;base64,)
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+    const result = await gemini.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: "image/jpeg",
+        },
+      },
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+
+    // Clean up JSON if needed (Gemini sometimes wraps in markdown blocks)
+    const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    const analysis = JSON.parse(jsonStr);
+
+    // Add visual description and recommendations to the result
+    return {
+      service: analysis.service || "plomberie",
+      subServices: analysis.subServices || [],
+      urgency: analysis.urgency || "normal",
+      complexity: analysis.complexity || "moderate",
+      estimatedDuration: analysis.estimatedDuration || "1-2 heures",
+      extractedKeywords: analysis.extractedKeywords || [],
+      confidence: analysis.confidence || 0.8,
+      language: "fr", // Default to French for system consistency
+      visualDescription: analysis.visualDescription,
+      recommendations: analysis.recommendations || [],
+    };
+
+  } catch (error) {
+    console.error("Gemini image analysis failed:", error);
+    if (userDescription) {
+      return analyzeJobDescription(userDescription, city, "normal");
+    }
+    throw new Error("Failed to analyze image");
+  }
+}
+
 export async function estimateCost(
-  description: string, 
-  service: string, 
-  city: string, 
-  urgency: string, 
-  complexity: string
+  description: string,
+  service: string,
+  city: string,
+  urgency: string,
+  complexity: string,
+  imageBase64?: string
 ): Promise<CostEstimate> {
   // Base rates by service (in MAD)
   const baseRates: Record<string, number> = {
@@ -177,12 +298,68 @@ export async function estimateCost(
   const complexityPremium = complexityPremiums[complexity] || 0;
 
   const adjustedBase = Math.round(baseRate * cityMultiplier);
-  const likelyCost = adjustedBase + urgencyPremium + timePremium + complexityPremium;
-  const minCost = Math.round(likelyCost * 0.8);
-  const maxCost = Math.round(likelyCost * 1.3);
+  const baseLikelyCost = adjustedBase + urgencyPremium + timePremium + complexityPremium;
+  let minCost = Math.round(baseLikelyCost * 0.8);
+  let likelyCost = baseLikelyCost;
+  let maxCost = Math.round(baseLikelyCost * 1.3);
 
   // Calculate confidence based on how much info we have
-  const confidence = 0.75 + (description.length > 50 ? 0.1 : 0) + (complexity !== "moderate" ? 0.05 : 0);
+  let confidence = 0.75 + (description.length > 50 ? 0.1 : 0) + (complexity !== "moderate" ? 0.05 : 0);
+
+  // If we have an image, use Gemini to refine cost estimation
+  let enhancedExplanation = `Estimation basée sur le service ${service} à ${city}. ${urgency === "emergency" ? "Prime d'urgence appliquée." : ""} ${timePremium > 0 ? "Prime horaire (hors heures normales)." : ""}`;
+
+  if (imageBase64 && gemini) {
+    try {
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+      const costPrompt = `You are a cost estimation expert for AlloBricolage in Morocco.
+
+Based on this image of a ${service} issue in ${city}:
+- Urgency: ${urgency}
+- Complexity: ${complexity}
+- Base estimate: ${minCost}-${maxCost} MAD
+
+Analyze the image and provide:
+1. Cost adjustment factor (0.8-1.2) based on visible damage severity
+2. Brief explanation in French (1-2 sentences) justifying the estimate
+3. Any hidden costs that might not be obvious
+
+Return JSON:
+{
+  "adjustmentFactor": 1.0,
+  "explanation": "Detailed explanation in French",
+  "hiddenCosts": ["possible_additional_cost_1"]
+}`;
+
+      const result = await gemini.generateContent([
+        costPrompt,
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: "image/jpeg",
+          },
+        },
+      ]);
+
+      const response = await result.response;
+      const text = response.text();
+      const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      const costAnalysis = JSON.parse(jsonStr);
+
+      // Apply AI adjustment
+      const factor = costAnalysis.adjustmentFactor || 1.0;
+      minCost = Math.round(minCost * factor);
+      likelyCost = Math.round(likelyCost * factor);
+      maxCost = Math.round(maxCost * factor);
+
+      enhancedExplanation = costAnalysis.explanation || enhancedExplanation;
+      confidence = Math.min(confidence + 0.1, 0.95); // Image analysis increases confidence
+
+    } catch (error) {
+      console.error("Gemini cost estimation failed:", error);
+      // Continue with rule-based estimation
+    }
+  }
 
   return {
     minCost,
@@ -196,7 +373,7 @@ export async function estimateCost(
       complexityPremium,
       demandPremium: 0,
     },
-    explanation: `Estimation basée sur le service ${service} à ${city}. ${urgency === "emergency" ? "Prime d'urgence appliquée." : ""} ${timePremium > 0 ? "Prime horaire (hors heures normales)." : ""}`,
+    explanation: enhancedExplanation,
   };
 }
 
@@ -226,7 +403,7 @@ export async function matchTechnicians(
     const priceScore = calculatePriceScore(tech.hourlyRate, costEstimate.likelyCost);
 
     // Weighted combination (XGBoost-style)
-    const matchScore = 
+    const matchScore =
       specializationMatch * 0.25 +
       locationScore * 0.15 +
       availabilityScore * 0.15 +
@@ -287,9 +464,7 @@ async function generateMatchExplanation(
   }
 
   try {
-    const response = await gemini.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `Generate a brief explanation in French (2-3 sentences) for why ${tech.name} is a ${Math.round(score * 100)}% match for a ${service} job. 
+    const prompt = `Generate a brief explanation in French (2-3 sentences) for why ${tech.name} is a ${Math.round(score * 100)}% match for a ${service} job. 
       
 Tech info:
 - Rating: ${tech.rating}/5 (${tech.reviewCount} reviews)
@@ -298,10 +473,11 @@ Tech info:
 - Skills: ${tech.skills.join(", ")}
 - Available: ${tech.isAvailable ? "Yes" : "No"}
 
-Be concise and focus on the most relevant qualifications.`,
-    });
+Be concise and focus on the most relevant qualifications.`;
 
-    return response.text || getDefaultExplanation(tech, score);
+    const result = await gemini.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || getDefaultExplanation(tech, score);
   } catch (error) {
     console.error("Gemini explanation failed:", error);
     return getDefaultExplanation(tech, score);
@@ -406,17 +582,17 @@ function detectLanguage(description: string): "fr" | "ar" | "en" {
 
 function calculateSpecializationScore(tech: TechnicianWithUser, service: string, description: string): number {
   let score = 0.7; // Base score for matching service
-  
+
   // Bonus for relevant skills mentioned in description
   for (const skill of tech.skills) {
     if (description.includes(skill.toLowerCase())) {
       score += 0.1;
     }
   }
-  
+
   // Experience bonus
   score += Math.min(tech.yearsExperience / 20, 0.15);
-  
+
   return Math.min(score, 1.0);
 }
 
@@ -430,7 +606,7 @@ function calculatePriceScore(hourlyRate: number, estimatedCost: number): number 
 function extractSubServices(description: string): string[] {
   const subServices: string[] = [];
   const lower = description.toLowerCase();
-  
+
   // Common sub-service keywords
   const subServiceMap: Record<string, string[]> = {
     "Fuite d'eau": ["fuite", "coule", "goutte"],
@@ -440,13 +616,13 @@ function extractSubServices(description: string): string[] {
     "Remplacement": ["remplacer", "changer", "remplacement"],
     "Entretien": ["entretien", "maintenance", "nettoyer"],
   };
-  
+
   for (const [service, keywords] of Object.entries(subServiceMap)) {
     if (keywords.some(kw => lower.includes(kw))) {
       subServices.push(service);
     }
   }
-  
+
   return subServices.slice(0, 3);
 }
 
@@ -460,7 +636,7 @@ function estimateDuration(complexity: string): string {
 
 // DarijaChat - AI-powered customer support in Moroccan Darija
 export async function darijaChat(
-  message: string, 
+  message: string,
   history: Array<{ role: string; content: string }>
 ): Promise<string> {
   // Common Darija responses for fallback
@@ -519,10 +695,8 @@ Example phrases:
     // Use Gemini as fallback
     if (gemini) {
       const historyContext = history.map(h => `${h.role}: ${h.content}`).join("\n");
-      
-      const response = await gemini.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: `You are a customer support assistant for AlloBricolage, a Moroccan handyman marketplace.
+
+      const prompt = `You are a customer support assistant for AlloBricolage, a Moroccan handyman marketplace.
         
 Always respond in Moroccan Darija (Latin script). Be helpful and friendly.
 
@@ -531,10 +705,11 @@ ${historyContext}
 
 User: ${message}
 
-Respond in Darija:`,
-      });
+Respond in Darija:`;
 
-      return response.text || darijaResponses[0];
+      const result = await gemini.generateContent(prompt);
+      const response = await result.response;
+      return response.text() || darijaResponses[0];
     }
 
   } catch (error) {

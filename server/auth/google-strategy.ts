@@ -6,7 +6,7 @@ import { randomUUID } from "crypto";
 export function configureGoogleAuth(storage: IStorage) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-  const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback";
+  const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || "http://localhost:5003/api/auth/google/callback";
 
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     console.warn("⚠️ Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env");
@@ -40,7 +40,7 @@ export function configureGoogleAuth(storage: IStorage) {
             // Check if user exists by email (for linking accounts)
             if (email) {
               user = await storage.getUserByEmail(email);
-              
+
               if (user) {
                 // Link Google account to existing user
                 user = await storage.updateUser(user.id, {
@@ -63,7 +63,7 @@ export function configureGoogleAuth(storage: IStorage) {
                 username = `${baseUsername}_${counter}`;
                 counter++;
               }
-              
+
               user = await storage.createUser({
                 username,
                 name,
@@ -79,9 +79,12 @@ export function configureGoogleAuth(storage: IStorage) {
           } else {
             // User exists - update profile picture if changed
             if (profilePicture && user.profilePicture !== profilePicture) {
-              user = await storage.updateUser(user.id, {
+              const updatedUser = await storage.updateUser(user.id, {
                 profilePicture,
               });
+              if (updatedUser) {
+                user = updatedUser;
+              }
             }
             console.log(`✅ Google user signed in: ${user.username}`);
           }

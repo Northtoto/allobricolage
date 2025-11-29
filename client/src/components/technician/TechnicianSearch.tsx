@@ -24,10 +24,18 @@ const SERVICES = [
   { value: "all", label: "Tous les services" },
   { value: "plomberie", label: "Plomberie" },
   { value: "electricite", label: "Électricité" },
-  { value: "menuiserie", label: "Menuiserie" },
   { value: "peinture", label: "Peinture" },
-  { value: "nettoyage", label: "Nettoyage" },
+  { value: "menuiserie", label: "Menuiserie" },
   { value: "climatisation", label: "Climatisation" },
+  { value: "reparation_appareils", label: "Réparation d'appareils" },
+  { value: "petites_renovations", label: "Petites rénovations" },
+  { value: "portes_serrures", label: "Portes/Serrures" },
+  { value: "metallerie", label: "Métallerie" },
+  { value: "carrelage", label: "Carrelage" },
+  { value: "etancheite", label: "Étanchéité" },
+  { value: "installation_luminaires", label: "Installation Luminaires" },
+  { value: "travaux_construction", label: "Travaux Construction" },
+  { value: "services_generaux", label: "Services Généraux" },
 ];
 
 const CITIES = [
@@ -38,6 +46,17 @@ const CITIES = [
   { value: "Fès", label: "Fès" },
   { value: "Tanger", label: "Tanger" },
   { value: "Agadir", label: "Agadir" },
+  { value: "Meknès", label: "Meknès" },
+  { value: "Oujda", label: "Oujda" },
+  { value: "Kenitra", label: "Kenitra" },
+  { value: "Tétouan", label: "Tétouan" },
+  { value: "Salé", label: "Salé" },
+  { value: "Nador", label: "Nador" },
+  { value: "Beni Mellal", label: "Beni Mellal" },
+  { value: "El Jadida", label: "El Jadida" },
+  { value: "Khouribga", label: "Khouribga" },
+  { value: "Safi", label: "Safi" },
+  { value: "Mohammedia", label: "Mohammedia" },
 ];
 
 const SORT_OPTIONS = [
@@ -222,5 +241,7 @@ export function TechnicianSearch({ onSearch }: TechnicianSearchProps) {
     </div>
   );
 }
+
+
 
 

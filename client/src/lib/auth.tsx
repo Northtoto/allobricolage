@@ -6,6 +6,8 @@ export interface AuthUser {
   username: string;
   name?: string;
   role: "client" | "technician";
+  email?: string;
+  profilePicture?: string;
 }
 
 interface TechnicianSignupData {

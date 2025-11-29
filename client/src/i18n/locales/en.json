@@ -1,0 +1,115 @@
+{
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "postJob": "Book Now",
+    "about": "About",
+    "blog": "Blog",
+    "contact": "Contact",
+    "forTech": "Technician Area",
+    "forClient": "Client Area",
+    "login": "Login",
+    "signup": "Sign Up",
+    "logout": "Logout"
+  },
+  "hero": {
+    "title": "Find the best handyman",
+    "titleHighlight": "in one click",
+    "subtitle": "Qualified plumbers, electricians, painters at your service in Morocco.",
+    "searchPlaceholder": "What service do you need?",
+    "cta": "Search",
+    "trust1": "Verified",
+    "trust2": "Insured",
+    "trust3": "Fast"
+  },
+  "booking": {
+    "title": "Book a Service",
+    "name": "Full Name",
+    "phone": "Phone",
+    "date": "Preferred Date",
+    "time": "Time",
+    "confirm": "Confirm Booking",
+    "success": "Booking Confirmed!"
+  },
+  "job": {
+    "title": "Describe your project for our master artisans",
+    "description": "What do you need help with?",
+    "descPlaceholder": "Example: Urgent water leak in our professional kitchen, need a certified plumber before tomorrow’s service.",
+    "city": "Service city",
+    "selectCity": "Choose the intervention city",
+    "urgency": "Urgency level",
+    "urgencyLow": "Preventive (planned)",
+    "urgencyNormal": "Standard (48h)",
+    "urgencyHigh": "Priority",
+    "urgencyEmergency": "Emergency 24/7",
+    "complexitySimple": "Light intervention",
+    "complexityModerate": "Moderate complexity",
+    "complexityComplex": "Advanced expertise",
+    "tip": "Pro tip: the more precise you are, the smarter our AI match will be.",
+    "analyzing": "Our AI extracts the key requirements of your project.",
+    "analyzeCTA": "Analyze with AI",
+    "analyzingShort": "Analyzing...",
+    "findMatches": "Find top artisans"
+  },
+  "services": {
+    "title": "Our signature trades",
+    "plomberie": "Plumbing & water systems",
+    "electricite": "Electrical & panels",
+    "peinture": "Painting & finishes",
+    "menuiserie": "Carpentry & fittings",
+    "climatisation": "AC & refrigeration",
+    "maconnerie": "Masonry & structure",
+    "carrelage": "Tiling & flooring",
+    "serrurerie": "Doors & locks",
+    "jardinage": "Garden care",
+    "nettoyage": "Pro cleaning"
+  },
+  "match": {
+    "title": "Recommended artisans",
+    "estimatedCost": "AI cost estimate"
+  },
+  "price": {
+    "confidence": "Confidence level",
+    "belowMarket": "below market",
+    "aboveMarket": "above market",
+    "breakdown": "View price breakdown",
+    "base": "Base service",
+    "urgency": "Urgency boost",
+    "time": "Time on site",
+    "complexity": "Complexity"
+  },
+  "ai": {
+    "loadingTitle": "AI analysis in progress",
+    "loadingSubtitle": "Give us a second while we qualify your request",
+    "emptyDescription": "AI will review your project automatically",
+    "cardTitle": "AI Insight",
+    "cardSubtitle": "Smart summary of your request",
+    "service": "Service detected",
+    "urgency": "Estimated urgency",
+    "complexity": "Complexity",
+    "duration": "Estimated duration",
+    "confidence": "AI confidence",
+    "keywords": "Detected keywords"
+  },
+  "chat": {
+    "greeting": "Hi! How can we help today?",
+    "title": "Darija Assistant",
+    "placeholder": "Ask your question in Darija..."
+  },
+  "upsell": {
+    "title": "Complete the service",
+    "add": "Add this option"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "error": "Error",
+    "loading": "Loading...",
+    "mad": "MAD"
+  },
+  "payment": {
+    "title": "Payment",
+    "method": "Payment Method",
+    "secure": "100% Secure Payment"
+  }
+}
+

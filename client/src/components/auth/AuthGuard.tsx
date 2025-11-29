@@ -18,7 +18,7 @@ export function AuthGuard({
 }: AuthGuardProps) {
   const [, setLocation] = useLocation();
 
-  const { data: user, isLoading, error } = useQuery({
+  const { data: user, isLoading, error } = useQuery<{ id: string; username: string; name: string; role: string }>({
     queryKey: ["/api/auth/me"],
     retry: false,
   });
@@ -56,5 +56,7 @@ export function AuthGuard({
 
   return <>{children}</>;
 }
+
+
 
 

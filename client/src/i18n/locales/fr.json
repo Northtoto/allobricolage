@@ -1,0 +1,258 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "services": "Services",
+    "postJob": "Réserver",
+    "about": "À propos",
+    "blog": "Blog",
+    "contact": "Contact",
+    "forTech": "Espace Artisan",
+    "forClient": "Espace Client",
+    "login": "Connexion",
+    "signup": "Inscription",
+    "logout": "Déconnexion"
+  },
+  "hero": {
+    "title": "Trouvez le meilleur artisan",
+    "titleHighlight": "en un clic",
+    "subtitle": "Plombiers, électriciens, peintres qualifiés à votre service au Maroc.",
+    "searchPlaceholder": "De quel service avez-vous besoin ?",
+    "cta": "Rechercher",
+    "trust1": "Vérifiés",
+    "trust2": "Assurés",
+    "trust3": "Rapides"
+  },
+  "booking": {
+    "title": "Réserver une intervention",
+    "name": "Nom complet",
+    "phone": "Téléphone",
+    "date": "Date souhaitée",
+    "time": "Heure",
+    "confirm": "Confirmer la réservation",
+    "success": "Réservation confirmée !",
+    "aiEnhance": "Améliorer avec l'IA",
+    "aiEnhancing": "Amélioration...",
+    "fieldsRequiredTitle": "Champs requis",
+    "fieldsRequiredDescription": "Veuillez remplir tous les champs.",
+    "authRequiredTitle": "Connexion requise",
+    "authRequiredDescription": "Vous devez être connecté pour réserver ce technicien.",
+    "toastSuccessTitle": "Réservation créée",
+    "toastSuccessDescription": "Le technicien a été notifié. Suivez le statut depuis votre espace client.",
+    "errorCreation": "Impossible de créer la réservation.",
+    "namePlaceholder": "Votre nom complet",
+    "phonePlaceholder": "+212 6XX-XXXXXX",
+    "descriptionLabel": "Description détaillée",
+    "descriptionPlaceholder": "Expliquez votre besoin avec le plus de détails possible.",
+    "confirming": "Confirmation...",
+    "waitingConfirmation": "En attente de confirmation..."
+  },
+  "job": {
+    "title": "Décrivez votre mission pour nos maîtres artisans",
+    "description": "Quel est votre besoin ?",
+    "descPlaceholder": "Exemple : Fuite d’eau sous l’évier du café, besoin d’un plombier certifié avant l’ouverture de demain.",
+    "city": "Ville d’intervention",
+    "selectCity": "Choisissez la ville où intervenir",
+    "urgency": "Niveau d’urgence",
+    "urgencyLow": "Préventif (planifié)",
+    "urgencyNormal": "Standard (48h)",
+    "urgencyHigh": "Prioritaire",
+    "urgencyEmergency": "Urgence 24/7",
+    "complexitySimple": "Intervention simple",
+    "complexityModerate": "Complexité modérée",
+    "complexityComplex": "Expertise avancée",
+    "tip": "Astuce : plus votre description est précise, plus l’IA sélectionne le bon artisan.",
+    "analyzing": "Notre IA rassemble les informations clés de votre demande.",
+    "analyzeCTA": "Analyser avec l’IA",
+    "analyzingShort": "Analyse en cours...",
+    "findMatches": "Trouver les meilleurs artisans",
+    "summaryTitle": "Résumé de votre demande",
+    "analysisButton": "Consulter l’analyse",
+    "noMatches": "Aucun artisan disponible pour le moment. Essayez d’élargir votre recherche."
+  },
+  "services": {
+    "title": "Nos interventions premium",
+    "plomberie": "Plomberie & réseaux d’eau",
+    "electricite": "Électricité & tableaux",
+    "peinture": "Peinture & finitions",
+    "menuiserie": "Menuiserie & agencement",
+    "climatisation": "Climatisation & froid",
+    "maconnerie": "Maçonnerie & structure",
+    "carrelage": "Carrelage & revêtements",
+    "serrurerie": "Portes & serrures",
+    "jardinage": "Espaces verts",
+    "nettoyage": "Nettoyage pro"
+  },
+  "match": {
+    "title": "Artisans recommandés",
+    "estimatedCost": "Estimation IA"
+  },
+  "price": {
+    "confidence": "Niveau de confiance",
+    "belowMarket": "sous le marché",
+    "aboveMarket": "au-dessus du marché",
+    "breakdown": "Voir le détail du prix",
+    "base": "Base service",
+    "urgency": "Majoration urgence",
+    "time": "Temps d’intervention",
+    "complexity": "Complexité"
+  },
+  "ai": {
+    "loadingTitle": "Analyse IA en cours",
+    "loadingSubtitle": "Patientez pendant que nous qualifions votre besoin",
+    "emptyDescription": "L'IA analysera votre demande automatiquement",
+    "cardTitle": "Analyse IA",
+    "cardSubtitle": "Résultats de l'analyse automatique",
+    "service": "Service détecté",
+    "urgency": "Urgence estimée",
+    "complexity": "Complexité prévue",
+    "duration": "Durée estimée",
+    "confidence": "Confiance IA",
+    "keywords": "Mots-clés détectés"
+  },
+  "chat": {
+    "greeting": "Salam ! Comment pouvons-nous vous aider aujourd’hui ?",
+    "title": "Assistant Darija",
+    "placeholder": "Écrivez votre question en Darija..."
+  },
+  "upsell": {
+    "title": "Compléter la mission",
+    "add": "Ajouter ce service"
+  },
+  "payment": {
+    "notFoundTitle": "Réservation introuvable",
+    "notFoundCta": "Retour à l'accueil",
+    "summaryTitle": "Récapitulatif",
+    "fields": {
+      "service": "Service",
+      "date": "Date",
+      "time": "Heure",
+      "amount": "Montant du service"
+    },
+    "status": {
+      "secureTitle": "Paiement sécurisé",
+      "secureSubtitle": "Choisissez votre mode de paiement préféré",
+      "confirmedTitle": "Paiement confirmé",
+      "confirmedSubtitle": "Votre réservation est validée.",
+      "completedNotice": "✅ Le service a été terminé. Vous pouvez maintenant procéder au paiement."
+    },
+    "actions": {
+      "downloadInvoice": "Télécharger la facture",
+      "payNow": "Procéder au paiement",
+      "generateReference": "Générer la référence",
+      "referenceGenerated": "Référence générée",
+      "confirmInstructions": "Confirmer les instructions"
+    },
+    "methods": {
+      "cmiTitle": "Carte bancaire marocaine (CMI)",
+      "cmiDescription": "Paiement sécurisé via Visa/Mastercard émises au Maroc",
+      "cashplusTitle": "Cash Plus",
+      "cashplusDescription": "Payez en espèces dans n'importe quel point Cash Plus",
+      "cashplusReferenceLabel": "Référence Cash Plus",
+      "cashplusHelp": "Présentez cette référence avec le montant de la mission.",
+      "bankTitle": "Virement bancaire (RIB/IBAN)",
+      "bankDescription": "Effectuez un virement depuis votre banque",
+      "referenceWarning": "⚠️ Mentionnez toujours cette référence dans le motif du virement."
+    },
+    "bank": {
+      "beneficiary": "Bénéficiaire",
+      "bank": "Banque",
+      "rib": "RIB",
+      "iban": "IBAN",
+      "reference": "Référence à mentionner"
+    }
+  },
+  "clientDashboard": {
+    "title": "Mon Espace Client",
+    "welcome": "Bienvenue, {{name}}",
+    "cta": "Nouvelle demande",
+    "tabs": {
+      "active": "En cours",
+      "history": "Historique",
+      "invoices": "Factures",
+      "profile": "Profil"
+    },
+    "empty": {
+      "active": "Aucune réservation en cours.",
+      "history": "Aucun historique disponible.",
+      "invoices": "Aucune facture disponible."
+    },
+    "invoices": {
+      "title": "Mes Factures",
+      "subtitle": "Téléchargez vos factures pour les services terminés",
+      "button": "PDF"
+    },
+    "profile": {
+      "title": "Mes Informations",
+      "username": "Nom d'utilisateur",
+      "role": "Rôle",
+      "edit": "Modifier le profil"
+    },
+    "cards": {
+      "pending": "En attente de confirmation...",
+      "track": "Suivre le technicien",
+      "pay": "Régler / Facture",
+      "review": "Laisser un avis"
+    }
+  },
+  "technicianDashboard": {
+    "title": "Espace Artisan",
+    "welcome": "Bonjour, {{name}}",
+    "stats": {
+      "monthly": "Gains du mois"
+    },
+    "tabs": {
+      "pending": "Offres",
+      "active": "En cours",
+      "history": "Historique",
+      "earnings": "Finances"
+    },
+    "empty": {
+      "pending": "Aucune nouvelle offre pour le moment.",
+      "active": "Aucune mission en cours.",
+      "history": "Aucune mission terminée."
+    },
+    "cards": {
+      "newRequest": "Nouvelle demande",
+      "estimation": "Estimation",
+      "contact": "Contacter le client",
+      "goToJob": "Aller au chantier",
+      "refuse": "Refuser",
+      "accept": "Accepter la mission"
+    }
+  },
+  "footer": {
+    "tagline": "Réinventons le bricolage B2B avec des artisans vérifiés, une IA locale et un service pensé pour tout le Maroc.",
+    "navigationTitle": "Navigation",
+    "contactTitle": "Contact",
+    "links": {
+      "home": "Accueil",
+      "services": "Services",
+      "book": "Réserver",
+      "about": "À propos",
+      "blog": "Blog"
+    },
+    "contact": {
+      "address": "12 Rue des Fleurs, Casablanca",
+      "phone": "+212 5XX 123 456",
+      "email": "contact@allobricolage.ma"
+    },
+    "legal": {
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation",
+      "support": "Support"
+    }
+  },
+  "common": {
+    "cancel": "Annuler",
+    "error": "Erreur",
+    "loading": "Chargement...",
+    "mad": "MAD",
+    "back": "Retour",
+    "recommended": "Recommandé",
+    "copy": "Copier",
+    "copiedTitle": "Copié !",
+    "copiedDescription": "Référence enregistrée dans votre presse-papiers.",
+    "empty": "Aucun élément à afficher"
+  }
+}
+

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { Calendar, Clock, Star, Shield, Loader2, CheckCircle, Wand2, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { TechnicianMatch, TechnicianWithUser } from "@shared/schema";
 
@@ -38,6 +38,13 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
 
   const technician = match?.technician || standaloneTechnician;
 
+  // Check if user is authenticated
+  const { data: user, isLoading: isCheckingAuth } = useQuery({
+    queryKey: ["/api/auth/me"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
   const bookingMutation = useMutation({
     mutationFn: async (data: typeof formData & { jobId: string; technicianId: string }) => {
       const response = await apiRequest("POST", "/api/bookings", data);
@@ -53,17 +60,17 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
       // Show success toast
       toast({
         title: "Réservation créée!",
-        description: "Redirection vers le paiement...",
+        description: "Le technicien a été notifié. Suivez le statut dans votre tableau de bord.",
       });
       
-      // Immediately redirect to payment page
+      // Redirect to client dashboard
       if (data?.id) {
-        console.log("🔀 Redirecting to:", `/payment/${data.id}`);
+        console.log("🔀 Redirecting to:", `/client-dashboard`);
         // Close modal first
         onClose();
         // Then redirect
         setTimeout(() => {
-          setLocation(`/payment/${data.id}`);
+          setLocation(`/client-dashboard`);
         }, 500);
       } else {
         console.error("❌ No booking ID returned:", data);
@@ -130,6 +137,19 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if user is authenticated before booking
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Vous devez être connecté pour réserver. Cliquez sur Se connecter dans le menu.",
+        variant: "destructive",
+      });
+      onClose();
+      setTimeout(() => setLocation("/login"), 500);
+      return;
+    }
+
     if (!formData.clientName || !formData.clientPhone || !formData.scheduledDate || !formData.scheduledTime) {
       toast({
         title: "Champs requis",

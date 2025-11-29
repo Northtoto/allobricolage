@@ -7,6 +7,10 @@ import express, {
   NextFunction,
 } from "express";
 
+import helmet from "helmet";
+// @ts-ignore
+import cookieParser from "cookie-parser";
+import { doubleCsrf } from "csrf-csrf";
 import { registerRoutes } from "./routes";
 import { storagePromise } from "./storage";
 
@@ -23,17 +27,57 @@ export function log(message: string, source = "express") {
 
 export const app = express();
 
+// Security headers middleware (helmet.js)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Required for Vite dev mode
+      connectSrc: ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
+      frameSrc: ["'self'", "https://accounts.google.com"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Allow embedding for Google OAuth
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  },
+}));
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
   }
 }
+app.use(cookieParser());
 app.use(express.json({
+  limit: '10mb',
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// CSRF Protection (configured but disabled for API routes)
+// We use session-based auth which is inherently protected by SameSite cookies
+// and Origin/Referer header validation in production
+export const { generateToken, doubleCsrfProtection } = doubleCsrf({
+  getSecret: () => process.env.CSRF_SECRET || "csrf-secret-allobricolage-2024",
+  cookieName: "__Host-csrf",
+  cookieOptions: {
+    sameSite: "strict",
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+  },
+  size: 64,
+  ignoredMethods: ["GET", "HEAD", "OPTIONS"],
+  getSessionIdentifier: (req) => "session-id", // Simple session identifier for now
+}) as any;
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -71,7 +115,7 @@ export default async function runApp(
   // Initialize database storage before registering routes
   await storagePromise;
   log("Database storage initialized");
-  
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

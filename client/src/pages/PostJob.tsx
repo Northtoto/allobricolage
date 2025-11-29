@@ -240,7 +240,7 @@ export default function PostJob() {
                         data-testid="input-job-description"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Tip: Soyez précis pour obtenir de meilleures correspondances IA
+                        {t("job.tip")}
                       </p>
                     </div>
 
@@ -303,12 +303,12 @@ export default function PostJob() {
                       {analyzeMutation.isPending ? (
                         <>
                           <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                          Analyse en cours...
+                          {t("job.analyzingShort")}
                         </>
                       ) : (
                         <>
                           <Sparkles className="h-5 w-5 mr-2" />
-                          Analyser avec l'IA
+                          {t("job.analyzeCTA")}
                         </>
                       )}
                     </Button>

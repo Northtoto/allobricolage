@@ -86,7 +86,7 @@ export async function createStripePaymentIntent(
     // Import Stripe dynamically
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: "2024-11-20.acacia",
+      apiVersion: "2025-02-24.acacia",
     });
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -125,7 +125,7 @@ export async function verifyStripeWebhook(
 
   const Stripe = (await import("stripe")).default;
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2024-11-20.acacia",
+    apiVersion: "2025-02-24.acacia",
   });
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -306,6 +306,8 @@ export function getPaymentMethodIcon(method: string): string {
   };
   return icons[method] || "💳";
 }
+
+
 
 
 
