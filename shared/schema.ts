@@ -32,16 +32,22 @@ export const MOROCCAN_CITIES = [
 export const URGENCY_LEVELS = ["low", "normal", "high", "emergency"] as const;
 export const COMPLEXITY_LEVELS = ["simple", "moderate", "complex"] as const;
 export const BOOKING_STATUS = ["pending", "accepted", "in_progress", "completed", "cancelled"] as const;
+export const PAYMENT_METHODS = ["stripe", "cmi", "cashplus", "bank_transfer", "cash"] as const;
+export const PAYMENT_STATUS = ["pending", "processing", "completed", "failed", "cancelled", "refunded"] as const;
 
 // Users table for clients and technicians
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"), // Nullable for OAuth users
   role: text("role").notNull().default("client"),
   name: text("name").notNull(),
+  email: text("email"),
   phone: text("phone"),
   city: text("city"),
+  googleId: text("google_id"), // For Google OAuth
+  profilePicture: text("profile_picture"), // From Google or uploaded
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Technicians table - professional metadata linked to users
@@ -108,11 +114,61 @@ export const bookings = pgTable("bookings", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Payments table
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey(),
+  bookingId: varchar("booking_id").notNull(),
+  amount: integer("amount").notNull(),
+  currency: text("currency").notNull().default("MAD"),
+  paymentMethod: text("payment_method").notNull(), // stripe, cmi, cashplus, bank_transfer
+  status: text("status").notNull().default("pending"), // pending, processing, completed, failed, cancelled
+  paymentIntentId: text("payment_intent_id"), // For Stripe
+  transactionId: text("transaction_id"), // For CMI, Cash Plus
+  bankReference: text("bank_reference"), // For bank transfers (RIB/IBAN)
+  paymentDetails: jsonb("payment_details"), // Store additional payment info
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  type: text("type").notNull(), // booking, payment, job_update, system
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  bookingId: varchar("booking_id"),
+  paymentId: varchar("payment_id"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Reviews table
+export const reviews = pgTable("reviews", {
+  id: varchar("id").primaryKey(),
+  technicianId: varchar("technician_id").notNull(),
+  clientId: varchar("client_id").notNull(),
+  bookingId: varchar("booking_id"),
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment").notNull(),
+  serviceQuality: integer("service_quality"), // 1-5
+  punctuality: integer("punctuality"), // 1-5
+  professionalism: integer("professionalism"), // 1-5
+  valueForMoney: integer("value_for_money"), // 1-5
+  isVerified: boolean("is_verified").notNull().default(false),
+  technicianResponse: text("technician_response"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertTechnicianSchema = createInsertSchema(technicians).omit({ id: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true });
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, createdAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -123,6 +179,12 @@ export type Job = typeof jobs.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = z.infer<typeof insertReviewSchema>;
 
 // Review type for recent reviews
 export interface TechnicianReview {

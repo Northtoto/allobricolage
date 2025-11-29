@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { User, Wrench, ArrowRight } from "lucide-react";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -94,7 +95,20 @@ export default function Signup() {
             </Card>
           </div>
 
-          <div className="mt-8 text-center text-sm">
+          <div className="mt-8">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Ou s'inscrire avec</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton text="S'inscrire avec Google" />
+          </div>
+
+          <div className="mt-6 text-center text-sm">
             <p className="text-muted-foreground">
               Vous avez déjà un compte?{" "}
               <button

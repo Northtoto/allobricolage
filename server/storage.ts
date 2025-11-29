@@ -4,7 +4,10 @@ import {
   type TechnicianWithUser,
   type Job, type InsertJob,
   type Booking, type InsertBooking,
-  users, technicians, jobs, bookings
+  type Payment, type InsertPayment,
+  type Notification, type InsertNotification,
+  type Review, type InsertReview,
+  users, technicians, jobs, bookings, payments, notifications, reviews
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -15,7 +18,10 @@ export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   
   // Technicians
   getTechnician(id: string): Promise<Technician | undefined>;
@@ -43,6 +49,28 @@ export interface IStorage {
   getBookingsByJob(jobId: string): Promise<Booking[]>;
   createBooking(booking: InsertBooking): Promise<Booking>;
   updateBooking(id: string, updates: Partial<Booking>): Promise<Booking | undefined>;
+  
+  // Payments
+  getPayment(id: string): Promise<Payment | undefined>;
+  getPaymentByBooking(bookingId: string): Promise<Payment | undefined>;
+  getAllPayments(): Promise<Payment[]>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePayment(id: string, updates: Partial<Payment>): Promise<Payment | undefined>;
+  
+  // Notifications
+  getNotification(id: string): Promise<Notification | undefined>;
+  getNotificationsByUser(userId: string): Promise<Notification[]>;
+  getUnreadNotificationsByUser(userId: string): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(id: string): Promise<Notification | undefined>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  
+  // Reviews
+  getReview(id: string): Promise<Review | undefined>;
+  getReviewsByTechnician(technicianId: string): Promise<Review[]>;
+  getReviewsByClient(clientId: string): Promise<Review[]>;
+  createReview(review: InsertReview): Promise<Review>;
+  updateReview(id: string, updates: Partial<Review>): Promise<Review | undefined>;
   
   // Seeding
   seedIfEmpty(): Promise<void>;
@@ -802,23 +830,47 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Create storage instance - use DatabaseStorage for persistence with error handling
+// Create storage instance - smart auto-detection with multiple fallbacks
 async function initStorage(): Promise<IStorage> {
+  // Load environment variables
+  try {
+    const dotenv = await import("dotenv");
+    dotenv.config();
+  } catch (e) {
+    // dotenv not available, continue with process.env
+  }
+
+  // Priority 1: PostgreSQL (Neon) if DATABASE_URL is provided
   if (process.env.DATABASE_URL) {
     try {
-      console.log("Using PostgreSQL database storage");
+      console.log("🐘 Using PostgreSQL database storage (Neon)");
       const dbStorage = new DatabaseStorage();
       await dbStorage.seedIfEmpty();
       return dbStorage;
     } catch (error) {
-      console.error("Failed to initialize database storage:", error);
-      console.log("Falling back to in-memory storage");
-      return new MemStorage();
+      console.error("❌ Failed to initialize PostgreSQL:", error);
+      console.log("⬇️ Falling back to SQLite...");
     }
-  } else {
-    console.log("DATABASE_URL not found, using in-memory storage");
-    return new MemStorage();
   }
+
+  // Priority 2: SQLite for local persistent storage
+  if (process.env.USE_SQLITE === "true" || !process.env.DATABASE_URL) {
+    try {
+      const { SQLiteStorage } = await import("./sqlite-storage");
+      console.log("📦 Using SQLite database storage (local persistent)");
+      const sqliteStorage = new SQLiteStorage();
+      await sqliteStorage.seedIfEmpty();
+      return sqliteStorage;
+    } catch (error) {
+      console.error("❌ Failed to initialize SQLite:", error);
+      console.log("⬇️ Falling back to in-memory storage...");
+    }
+  }
+
+  // Priority 3: In-memory storage (last resort - data lost on restart)
+  console.log("💾 Using in-memory storage (data will be lost on restart)");
+  console.log("💡 Tip: Set USE_SQLITE=true in .env for persistent local storage");
+  return new MemStorage();
 }
 
 // Export a promise that resolves to storage
@@ -830,6 +882,7 @@ export let storage: IStorage = new MemStorage();
 // Update the storage reference once initialized
 storagePromise.then(s => {
   storage = s;
+  console.log("✅ Storage initialized successfully");
 }).catch(error => {
-  console.error("Storage initialization failed, using MemStorage fallback:", error);
+  console.error("❌ Storage initialization failed, using MemStorage fallback:", error);
 });

@@ -4,6 +4,8 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { registerPaymentRoutes } from "./payment-routes";
+import { requireAuth, requireRole } from "./middleware/auth-guard";
 import { 
   analyzeJobDescription, 
   estimateCost, 
@@ -34,6 +36,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Setup authentication routes
   setupAuth(app);
+  
+  // Setup payment routes
+  registerPaymentRoutes(app);
   
   // ==================== JOB ROUTES ====================
   
@@ -143,21 +148,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all technicians
   app.get("/api/technicians", async (req, res) => {
     try {
-      const { city, service } = req.query;
+      const { 
+        city, 
+        service, 
+        minRating, 
+        available, 
+        search,
+        sortBy 
+      } = req.query;
+      
       let technicians = await storage.getAllTechniciansWithUsers();
       
-      if (city) {
+      // Filter by city
+      if (city && city !== 'all') {
         technicians = technicians.filter(
           t => t.city?.toLowerCase() === (city as string).toLowerCase()
         );
       }
       
-      if (service) {
+      // Filter by service
+      if (service && service !== 'all') {
         technicians = technicians.filter(
           t => t.services.includes(service as string)
         );
       }
-      
+
+      // Filter by minimum rating
+      if (minRating) {
+        const rating = parseFloat(minRating as string);
+        technicians = technicians.filter(t => t.rating >= rating);
+      }
+
+      // Filter by availability
+      if (available === 'true') {
+        technicians = technicians.filter(t => t.isAvailable);
+      }
+
+      // Search by name or bio
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        technicians = technicians.filter(t => 
+          t.name.toLowerCase().includes(searchLower) ||
+          t.bio?.toLowerCase().includes(searchLower) ||
+          t.services.some(s => s.toLowerCase().includes(searchLower))
+        );
+      }
+
+      // Sort results
+      if (sortBy) {
+        switch (sortBy) {
+          case 'rating':
+            technicians.sort((a, b) => b.rating - a.rating);
+            break;
+          case 'price-low':
+            technicians.sort((a, b) => (a.hourlyRate || 0) - (b.hourlyRate || 0));
+            break;
+          case 'price-high':
+            technicians.sort((a, b) => (b.hourlyRate || 0) - (a.hourlyRate || 0));
+            break;
+          case 'reviews':
+            technicians.sort((a, b) => b.reviewCount - a.reviewCount);
+            break;
+          case 'experience':
+            technicians.sort((a, b) => b.yearsExperience - a.yearsExperience);
+            break;
+          default:
+            // Default: sort by rating
+            technicians.sort((a, b) => b.rating - a.rating);
+        }
+      } else {
+        // Default sorting: featured first, then by rating
+        technicians.sort((a, b) => {
+          if (a.isPromo !== b.isPromo) return b.isPromo ? 1 : -1;
+          if (a.isPro !== b.isPro) return b.isPro ? 1 : -1;
+          return b.rating - a.rating;
+        });
+      }
+
       res.json(technicians);
     } catch (error) {
       console.error("Get technicians error:", error);
@@ -179,10 +246,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== REVIEW ROUTES ====================
+
+  // Get reviews for a technician
+  app.get("/api/technicians/:id/reviews", async (req, res) => {
+    try {
+      const reviews = await storage.getReviewsByTechnician(req.params.id);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Get reviews error:", error);
+      res.status(500).json({ error: "Failed to get reviews" });
+    }
+  });
+
+  // Create a review (requires authentication)
+  app.post("/api/reviews", requireAuth, async (req, res) => {
+    try {
+      const { technicianId, bookingId, rating, comment, serviceQuality, punctuality, professionalism, valueForMoney } = req.body;
+
+      if (!technicianId || !rating || !comment) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+
+      const review = await storage.createReview({
+        technicianId,
+        clientId: req.user.id,
+        bookingId: bookingId || null,
+        rating,
+        comment,
+        serviceQuality: serviceQuality || null,
+        punctuality: punctuality || null,
+        professionalism: professionalism || null,
+        valueForMoney: valueForMoney || null,
+        isVerified: !!bookingId, // Verified if linked to a booking
+      });
+
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Create review error:", error);
+      res.status(500).json({ error: "Failed to create review" });
+    }
+  });
+
+  // Update review (technician response)
+  app.patch("/api/reviews/:id/response", requireRole("technician"), async (req, res) => {
+    try {
+      const { response } = req.body;
+      
+      if (!response) {
+        return res.status(400).json({ error: "Response text is required" });
+      }
+
+      const review = await storage.getReview(req.params.id);
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+
+      // Verify the technician owns this review
+      const technician = await storage.getTechnicianByUserId(req.user.id);
+      if (!technician || technician.id !== review.technicianId) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const updated = await storage.updateReview(req.params.id, {
+        technicianResponse: response
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Update review error:", error);
+      res.status(500).json({ error: "Failed to update review" });
+    }
+  });
+
   // ==================== BOOKING ROUTES ====================
 
-  // Create booking
-  app.post("/api/bookings", async (req, res) => {
+  // Create booking (requires authentication)
+  app.post("/api/bookings", requireAuth, async (req, res) => {
     try {
       const { jobId, technicianId, clientName, clientPhone, scheduledDate, scheduledTime, description } = req.body;
       
@@ -237,6 +381,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update job status
       await storage.updateJob(actualJobId, { status: "accepted" });
+
+      // Debug logging
+      console.log("✅ Booking created successfully:", {
+        id: booking.id,
+        status: booking.status,
+        technicianId: booking.technicianId,
+        estimatedCost: booking.estimatedCost
+      });
 
       res.json(booking);
     } catch (error) {

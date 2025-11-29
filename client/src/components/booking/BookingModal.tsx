@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
-import { Calendar, Clock, Star, Shield, Loader2, CheckCircle, Wand2 } from "lucide-react";
+import { Calendar, Clock, Star, Shield, Loader2, CheckCircle, Wand2, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -25,6 +26,7 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
   const { t } = useI18n();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     clientName: "",
     clientPhone: "",
@@ -32,24 +34,48 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
     scheduledTime: "",
     description: "",
   });
-  const [bookingSuccess, setBookingSuccess] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
   const technician = match?.technician || standaloneTechnician;
 
   const bookingMutation = useMutation({
     mutationFn: async (data: typeof formData & { jobId: string; technicianId: string }) => {
-      return apiRequest("POST", "/api/bookings", data);
+      const response = await apiRequest("POST", "/api/bookings", data);
+      return response.json(); // Parse JSON from Response object
     },
-    onSuccess: () => {
-      setBookingSuccess(true);
+    onSuccess: (data: any) => {
+      console.log("✅ Booking created successfully");
+      console.log("📦 Response data:", data);
+      console.log("🆔 Booking ID:", data?.id);
+      
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      
+      // Show success toast
       toast({
-        title: t("booking.success"),
-        description: "Vous recevrez une confirmation par SMS.",
+        title: "Réservation créée!",
+        description: "Redirection vers le paiement...",
       });
+      
+      // Immediately redirect to payment page
+      if (data?.id) {
+        console.log("🔀 Redirecting to:", `/payment/${data.id}`);
+        // Close modal first
+        onClose();
+        // Then redirect
+        setTimeout(() => {
+          setLocation(`/payment/${data.id}`);
+        }, 500);
+      } else {
+        console.error("❌ No booking ID returned:", data);
+        toast({
+          title: "Erreur",
+          description: "ID de réservation manquant",
+          variant: "destructive",
+        });
+      }
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("❌ Booking error:", error);
       toast({
         title: t("common.error"),
         description: "Impossible de créer la réservation.",
@@ -124,7 +150,6 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
   };
 
   const handleClose = () => {
-    setBookingSuccess(false);
     setFormData({ clientName: "", clientPhone: "", scheduledDate: "", scheduledTime: "", description: "" });
     onClose();
   };
@@ -138,26 +163,6 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
     return slots;
   };
 
-  if (bookingSuccess) {
-    return (
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
-          <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-green-500" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">{t("booking.success")}</h2>
-            <p className="text-muted-foreground mb-6">
-              {technician.name} a été notifié et vous contactera bientôt.
-            </p>
-            <Button onClick={handleClose} data-testid="button-close-success">
-              Fermer
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

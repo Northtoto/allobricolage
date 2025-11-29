@@ -13,6 +13,7 @@ import TechnicianDashboard from "@/pages/TechnicianDashboard";
 import ClientDashboard from "@/pages/ClientDashboard";
 import TechnicianProfile from "@/pages/TechnicianProfile";
 import TechnicianDirectory from "@/pages/TechnicianDirectory";
+import Payment from "@/pages/Payment";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ClientSignup from "@/pages/ClientSignup";
@@ -28,8 +29,11 @@ function Router() {
       <Route path="/client-dashboard" component={ClientDashboard} />
       <Route path="/technicians" component={TechnicianDirectory} />
       <Route path="/technician/:id" component={TechnicianProfile} />
+      <Route path="/payment/:bookingId" component={Payment} />
       <Route path="/login" component={Login} />
+      <Route path="/connexion" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/inscription" component={Signup} />
       <Route path="/signup/client" component={ClientSignup} />
       <Route path="/signup/technician" component={TechnicianSignup} />
       <Route component={NotFound} />

@@ -1,8 +1,11 @@
 import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
+import passport from "passport";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { randomUUID } from "crypto";
+import { configureGoogleAuth } from "./auth/google-strategy";
+import { registerGoogleAuthRoutes } from "./auth/google-routes";
 
 const SALT_ROUNDS = 10;
 
@@ -30,6 +33,27 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
 }
 
 export function setupAuth(app: Express) {
+  // Initialize Passport
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Configure passport serialization
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
+  });
+
+  // Configure Google OAuth strategy
+  configureGoogleAuth(storage);
+
   // IMPORTANT: Middleware to load user MUST be registered BEFORE routes
   app.use(async (req: Request, res: Response, next: NextFunction) => {
     if (req.session?.userId) {
@@ -45,6 +69,9 @@ export function setupAuth(app: Express) {
     }
     next();
   });
+
+  // Register Google OAuth routes
+  registerGoogleAuthRoutes(app);
 
   // Get current user
   app.get("/api/auth/me", (req: Request, res: Response) => {

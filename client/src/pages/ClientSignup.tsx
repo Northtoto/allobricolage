@@ -11,6 +11,7 @@ import { Footer } from "@/components/layout/Footer";
 import { User, Loader2, Building2, Phone, MapPin } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { MOROCCAN_CITIES } from "@shared/schema";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 export default function ClientSignup() {
   const [, setLocation] = useLocation();
@@ -197,6 +198,17 @@ export default function ClientSignup() {
               )}
             </Button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Ou s'inscrire avec</span>
+            </div>
+          </div>
+
+          <GoogleSignInButton text="S'inscrire avec Google" />
 
           <div className="mt-6 text-center text-sm space-y-2">
             <p className="text-muted-foreground">

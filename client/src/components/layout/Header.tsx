@@ -36,16 +36,22 @@ export function Header() {
 
   const dashboardLink = getDashboardLink();
   
+  // Inspired by leading innovation templates (DGital) we mix primary routes and
+  // in-page anchors so users can jump to key storytelling sections quickly.
   const navLinks = [
-    { href: "/", label: t("nav.home") },
-    { href: "/post-job", label: t("nav.postJob") },
-    ...(dashboardLink ? [dashboardLink] : []),
+    { href: "/", label: "Accueil", type: "route" },
+    { href: "#services", label: "Services", type: "anchor" },
+    { href: "/post-job", label: "Booking", type: "route" },
+    { href: "#about", label: "À propos", type: "anchor" },
+    { href: "#stories", label: "Blog", type: "anchor" },
+    { href: "#contact", label: "Contact", type: "anchor" },
+    ...(dashboardLink ? [{ ...dashboardLink, type: "route" as const }] : []),
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-20 items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home">
@@ -60,18 +66,29 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
-                <Button
-                  variant={location === link.href ? "secondary" : "ghost"}
-                  size="sm"
-                  data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navLinks.map((link) =>
+              link.type === "anchor" ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary rounded-full"
                 >
                   {link.label}
-                </Button>
-              </Link>
-            ))}
+                </a>
+              ) : (
+                <Link key={link.href} href={link.href}>
+                  <Button
+                    variant={location === link.href ? "secondary" : "ghost"}
+                    size="sm"
+                    className="rounded-full"
+                    data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
+                  >
+                    {link.label}
+                  </Button>
+                </Link>
+              )
+            )}
           </nav>
 
           {/* Right side controls */}
@@ -136,14 +153,12 @@ export function Header() {
             </div>
 
             {/* CTA Button - Desktop */}
-            {user && (
-              <Link href="/post-job" className="hidden md:block">
-                <Button data-testid="button-header-post-job">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  {t("nav.postJob")}
-                </Button>
-              </Link>
-            )}
+            <Link href="/post-job" className="hidden md:block">
+              <Button className="rounded-full px-5 shadow-lg shadow-primary/20" data-testid="button-header-post-job">
+                <Building2 className="h-4 w-4 mr-2" />
+                Réserver un artisan
+              </Button>
+            </Link>
 
             {/* Mobile Menu Toggle */}
             <Button
@@ -163,26 +178,35 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-border bg-background">
           <nav className="flex flex-col p-4 gap-2">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
-                <Button
-                  variant={location === link.href ? "secondary" : "ghost"}
-                  className="w-full justify-start"
+            {navLinks.map((link) =>
+              link.type === "anchor" ? (
+                <a
+                  key={link.label}
+                  href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  data-testid={`link-mobile-nav-${link.href.replace("/", "") || "home"}`}
+                  className="px-4 py-2 rounded-xl text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {link.label}
-                </Button>
-              </Link>
-            ))}
-            {user && (
-              <Link href="/post-job">
-                <Button className="w-full justify-start" onClick={() => setMobileMenuOpen(false)} data-testid="button-mobile-post-job">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  {t("nav.postJob")}
-                </Button>
-              </Link>
+                </a>
+              ) : (
+                <Link key={link.href} href={link.href}>
+                  <Button
+                    variant={location === link.href ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setMobileMenuOpen(false)}
+                    data-testid={`link-mobile-nav-${link.href.replace("/", "") || "home"}`}
+                  >
+                    {link.label}
+                  </Button>
+                </Link>
+              )
             )}
+            <Link href="/post-job">
+              <Button className="w-full justify-start mt-2" onClick={() => setMobileMenuOpen(false)} data-testid="button-mobile-post-job">
+                <Building2 className="h-4 w-4 mr-2" />
+                Réserver un artisan
+              </Button>
+            </Link>
             <div className="border-t border-border pt-2">
               {user ? (
                 <>
