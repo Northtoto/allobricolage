@@ -1,13 +1,14 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import LanguageDetector from "i18next-browser-languagedetector";
 
 import fr from "./locales/fr.json";
 import en from "./locales/en.json";
 import ar from "./locales/ar.json";
 
+// Get language from localStorage or default to French
+const savedLanguage = localStorage.getItem('i18nextLng') || 'fr';
+
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
@@ -15,19 +16,21 @@ i18n
       en: { translation: en },
       ar: { translation: ar },
     },
+    lng: savedLanguage,
     fallbackLng: "fr",
     supportedLngs: ["fr", "en", "ar"],
     interpolation: {
       escapeValue: false,
     },
-    detection: {
-      order: ["localStorage", "navigator"],
-      caches: ["localStorage"],
-    },
     react: {
       useSuspense: false,
     },
   });
+
+// Save language changes to localStorage
+i18n.on('languageChanged', (lng) => {
+  localStorage.setItem('i18nextLng', lng);
+});
 
 export default i18n;
 
