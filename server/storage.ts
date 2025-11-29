@@ -858,13 +858,13 @@ async function initStorage(): Promise<IStorage> {
     );
   }
 
-  try {
+    try {
     console.log("🐘 Connecting to Neon PostgreSQL database...");
-    const dbStorage = new DatabaseStorage();
-    await dbStorage.seedIfEmpty();
+      const dbStorage = new DatabaseStorage();
+      await dbStorage.seedIfEmpty();
     console.log("✅ Database connected and initialized successfully");
-    return dbStorage;
-  } catch (error) {
+      return dbStorage;
+    } catch (error) {
     console.error("❌ Failed to initialize PostgreSQL database:", error);
     throw new Error(
       "Database connection failed. Please check your DATABASE_URL and ensure:\n" +
