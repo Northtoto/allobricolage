@@ -1,28 +1,23 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "framework": null,
-  "outputDirectory": "dist/public",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/:path*",
-      "destination": "/api"
+      "src": "dist/index.js",
+      "use": "@vercel/node"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "dist/public/**",
+      "use": "@vercel/static"
     }
   ],
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 30
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/dist/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/public/$1"
     }
-  },
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
