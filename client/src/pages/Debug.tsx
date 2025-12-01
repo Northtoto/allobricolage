@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
-import { checkSeedData, resetSeedData } from "@/data/seedData";
 
 export default function Debug() {
   const [data, setData] = useState<any>(null);
@@ -28,15 +27,25 @@ export default function Debug() {
     loadData();
   }, []);
 
-  const handleReset = () => {
-    resetSeedData();
-    loadData();
-    alert('Data reset! Refresh the page.');
+  const handleReset = async () => {
+    if (import.meta.env.DEV) {
+      const { resetSeedData } = await import("@/data/seedData");
+      resetSeedData();
+      loadData();
+      alert('Data reset! Refresh the page.');
+    } else {
+      alert('Debug functions are only available in development mode.');
+    }
   };
 
-  const handleCheck = () => {
-    checkSeedData();
-    loadData();
+  const handleCheck = async () => {
+    if (import.meta.env.DEV) {
+      const { checkSeedData } = await import("@/data/seedData");
+      checkSeedData();
+      loadData();
+    } else {
+      console.log('Debug functions are only available in development mode.');
+    }
   };
 
   return (
