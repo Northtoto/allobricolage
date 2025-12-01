@@ -1,6 +1,7 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "cd ALLOBRICOLAGE && npm install && npm run build",
+  "outputDirectory": "ALLOBRICOLAGE/dist",
+  "installCommand": "echo 'Skipping root install'",
   "framework": null,
   "routes": [
     { "handle": "filesystem" },
