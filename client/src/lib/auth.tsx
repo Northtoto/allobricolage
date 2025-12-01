@@ -52,13 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-        }
+        const res = await apiRequest("GET", "/api/auth/me", undefined);
+        const userData = await res.json();
+        setUser(userData);
       } catch (error) {
-        console.error("Auth check failed:", error);
+        // User not logged in, that's fine
+        console.log("No active session");
       } finally {
         setIsLoading(false);
       }

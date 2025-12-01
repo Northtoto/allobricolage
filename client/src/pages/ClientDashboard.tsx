@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Clock, MapPin, Download, Star, User, Settings, FileText } from "lucide-react";
+import { Calendar, Clock, MapPin, Download, Star, User, Settings, FileText, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 interface Booking {
@@ -24,10 +24,21 @@ interface Booking {
 }
 
 export default function ClientDashboard() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
 
-  const { data: bookings, isLoading } = useQuery<Booking[]>({
+  // Redirect if not authenticated or not a client
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setLocation("/login");
+    } else if (!authLoading && user && user.role !== "client") {
+      setLocation("/technician-dashboard");
+    }
+  }, [user, authLoading, setLocation]);
+
+  const { data: bookings, isLoading: bookingsLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
+    enabled: !!user, // Only fetch if user is logged in
   });
 
   // Filter bookings for current user - show only bookings created by this client
@@ -36,8 +47,16 @@ export default function ClientDashboard() {
   const activeBookings = myBookings.filter((b: Booking) => ["pending", "accepted"].includes(b.status));
   const pastBookings = myBookings.filter((b: Booking) => ["completed", "cancelled"].includes(b.status));
 
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  if (authLoading || bookingsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect
   }
 
   return (

@@ -36,6 +36,24 @@ export function Header() {
 
   const dashboardLink = getDashboardLink();
   
+  // Handle navigation to homepage sections
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, anchor: string) => {
+    e.preventDefault();
+    if (location === "/") {
+      // Already on homepage, just scroll
+      const element = document.querySelector(anchor);
+      element?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      // Navigate to homepage first, then scroll
+      setLocation("/");
+      setTimeout(() => {
+        const element = document.querySelector(anchor);
+        element?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+    setMobileMenuOpen(false);
+  };
+  
   // Inspired by leading innovation templates (DGital) we mix primary routes and
   // in-page anchors so users can jump to key storytelling sections quickly.
   const navLinks = [
@@ -75,7 +93,8 @@ export function Header() {
                 <a
                   key={link.label}
                   href={link.href}
-                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary rounded-full"
+                  onClick={(e) => handleAnchorClick(e, link.href)}
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary rounded-full cursor-pointer"
                 >
                   {link.label}
                 </a>
@@ -186,8 +205,8 @@ export function Header() {
                 <a
                   key={link.label}
                   href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-2 rounded-xl text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  onClick={(e) => handleAnchorClick(e, link.href)}
+                  className="px-4 py-2 rounded-xl text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
                 >
                   {link.label}
                 </a>

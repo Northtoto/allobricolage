@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Calendar, Clock, MapPin, DollarSign, CheckCircle, XCircle, User } from "lucide-react";
+import { Calendar, Clock, MapPin, DollarSign, CheckCircle, XCircle, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 interface Booking {
@@ -35,21 +36,33 @@ interface DashboardStats {
 }
 
 export default function TechnicianDashboard() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: stats } = useQuery<DashboardStats>({
+  // Redirect if not authenticated or not a technician
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setLocation("/login");
+    } else if (!authLoading && user && user.role !== "technician") {
+      setLocation("/client-dashboard");
+    }
+  }, [user, authLoading, setLocation]);
+
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/technician/stats"],
+    enabled: !!user && user.role === "technician",
   });
 
   const { data: pendingJobs } = useQuery<Booking[]>({
     queryKey: ["/api/technician/pending-jobs"],
+    enabled: !!user && user.role === "technician",
   });
 
   const { data: allBookings } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
+    enabled: !!user && user.role === "technician",
   });
 
   // Get technician record for current user
@@ -57,6 +70,18 @@ export default function TechnicianDashboard() {
     queryKey: ["/api/technicians/me"],
     enabled: !!user && user.role === "technician"
   });
+
+  if (authLoading || statsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect
+  }
 
   // Filter bookings assigned to this technician
   const myJobs = allBookings && technicianProfile 

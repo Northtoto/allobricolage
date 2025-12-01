@@ -20,6 +20,8 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("🔐 Login form submitted");
+    
     if (!formData.username || !formData.password) {
       toast({ title: "Erreur", description: "Veuillez remplir tous les champs", variant: "destructive" });
       return;
@@ -27,10 +29,32 @@ export default function Login() {
 
     setIsLoading(true);
     try {
+      console.log("🔐 Calling login function...");
       await login(formData.username, formData.password);
+      console.log("✅ Login function completed");
+      
       toast({ title: "Succès", description: "Connecté avec succès" });
-      setLocation("/");
-    } catch (error) {
+      
+      // Redirect based on user role
+      // Get the user from localStorage after login
+      const currentUserStr = localStorage.getItem('allobricolage_current_user');
+      console.log("🔐 Current user from localStorage:", currentUserStr);
+      
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr);
+        console.log("🔐 Redirecting to:", currentUser.role === "technician" ? "/technician-dashboard" : "/client-dashboard");
+        
+        if (currentUser.role === "technician") {
+          setLocation("/technician-dashboard");
+        } else {
+          setLocation("/client-dashboard");
+        }
+      } else {
+        console.log("🔐 No user in localStorage, redirecting to home");
+        setLocation("/");
+      }
+    } catch (error: any) {
+      console.error("❌ Login error:", error);
       toast({ title: "Erreur", description: "Identifiants invalides", variant: "destructive" });
     } finally {
       setIsLoading(false);

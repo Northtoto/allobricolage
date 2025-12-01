@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AnalysisResult {
     service: string;
@@ -56,17 +57,11 @@ export function JobImageAnalyzer() {
 
         setIsAnalyzing(true);
         try {
-            const response = await fetch("/api/jobs/analyze-image", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    image,
-                    city: "Casablanca", // Default for quick analysis
-                    description: "Analyse rapide par image"
-                }),
+            const response = await apiRequest("POST", "/api/jobs/analyze-image", {
+                imageData: image,
+                city: "Casablanca", // Default for quick analysis
+                description: "Analyse rapide par image"
             });
-
-            if (!response.ok) throw new Error("Erreur d'analyse");
 
             const data = await response.json();
             setResult(data);

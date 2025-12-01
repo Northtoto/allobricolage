@@ -1,39 +1,46 @@
-# 🛠️ AlloBricolage - B2B Maintenance Services Platform
+# 🛠️ AlloBricolage - Demo Mode
 
 > AI-Powered Handyman Marketplace for Moroccan Businesses
 
 Connect B2B clients (cafés, restaurants, companies) with professional maintenance technicians (plumbers, electricians, painters, etc.) across Morocco.
 
+## 🎯 Demo Mode - No Backend Required!
+
+This application runs entirely in the browser using **LocalStorage** instead of a database. Perfect for demonstrations, portfolios, and testing!
+
 ## 🚀 Quick Deploy to Vercel
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/allobricolage)
 
-**📖 [Complete Deployment Guide](./VERCEL_DEPLOYMENT.md)**
+**No environment variables needed!** Just click deploy and it works.
+
+**📖 [Demo Mode Documentation](./DEMO_MODE.md)**
 
 ## ✨ Features
 
-- 🤖 AI-Powered Job Analysis
+- 🤖 AI-Powered Job Analysis (Mock)
 - 🎯 Smart Technician Matching
 - 💰 Dynamic Cost Estimation
-- 💳 Multiple Payment Methods (CMI, Cash Plus, Bank Transfer)
+- 💳 Multiple Payment Methods (Simulated)
 - 🌐 Bilingual Support (French & Arabic)
 - 📍 Real-time GPS Tracking
 - 💬 DarijaChat AI Support
 - 📊 Analytics Dashboards
+- 🔐 Full Authentication System
+- ⭐ Reviews & Ratings
+- 📱 Responsive Design
 
 ## 🗄️ Tech Stack
 
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS
-- **Backend**: Node.js + Express + Drizzle ORM
-- **Database**: PostgreSQL (Neon)
-- **Deployment**: Vercel
-- **AI**: OpenAI + Google Gemini (optional)
+- **Storage**: Browser LocalStorage
+- **Deployment**: Vercel (Static Site)
+- **No Backend Required!**
 
 ## 📋 Prerequisites
 
 - Node.js 18+
-- Neon PostgreSQL database (free at https://neon.tech)
-- Vercel account (free at https://vercel.com)
+- Modern web browser
 
 ## 🎯 Local Development
 
@@ -41,58 +48,69 @@ Connect B2B clients (cafés, restaurants, companies) with professional maintenan
 # Install dependencies
 npm install
 
-# Set up environment variables
-cp env.example.txt .env
-# Edit .env and add your DATABASE_URL
-
-# Initialize database
-npm run db:init
+# Start development server
+npm run dev
 
 # Start development server
 npm run dev
 ```
 
-Open http://localhost:5000
+Open `http://localhost:5173` in your browser.
+
+## 👤 Demo Accounts
+
+### Client Account
+- Username: `demo_client`
+- Password: `demo123`
+
+### Technician Accounts
+- Username: `youssef_elfassi` (Plomberie - Casablanca)
+- Username: `karim_bennani` (Électricité - Marrakech)
+- Username: `fatima_alaoui` (Peinture - Rabat)
+- Password for all: `demo123`
 
 ## 🚀 Deploy to Vercel
 
-1. **Get a Neon database**: https://neon.tech
-2. **Push to GitHub**: `git push origin main`
-3. **Import to Vercel**: https://vercel.com/new
-4. **Add environment variables**:
-   - `DATABASE_URL` (from Neon)
-   - `SESSION_SECRET` (generate with `openssl rand -base64 32`)
-5. **Deploy!**
+1. **Push to GitHub**: `git push origin main`
+2. **Import to Vercel**: https://vercel.com/new
+3. **Deploy!** (No environment variables needed)
 
-**📖 [Detailed Deployment Guide](./VERCEL_DEPLOYMENT.md)**
+That's it! The app works entirely in the browser.
 
-## ⚙️ Environment Variables
+## 💾 Data Persistence
 
-### Required:
-- `DATABASE_URL` - PostgreSQL connection string
-- `SESSION_SECRET` - Session encryption key
+- All data stored in browser LocalStorage
+- 10 pre-seeded technician profiles
+- Data persists across page refreshes
+- Clear browser cache to reset data
 
-### Optional:
-- `OPENAI_API_KEY` - For AI job analysis
-- `GEMINI_API_KEY` - For smart matching
-- `GOOGLE_MAPS_API_KEY` - For GPS tracking
-- `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET` - For OAuth
-- Payment provider keys (Stripe, CMI, Cash Plus)
+## 🔄 Reset Demo Data
+
+Open browser console (F12) and run:
+```javascript
+localStorage.clear();
+location.reload();
+```
 
 ## 📱 Application Structure
 
 ```
-├── client/          # React frontend
-├── server/          # Express backend
+├── client/          # React frontend (SPA)
+│   ├── src/
+│   │   ├── lib/
+│   │   │   ├── localStorage.ts    # Storage service
+│   │   │   ├── apiAdapter.ts      # API routing
+│   │   │   └── mockServices.ts    # Mock services
+│   │   └── data/
+│   │       └── seedData.ts        # Seed data
 ├── shared/          # Shared types & schema
-├── api/             # Vercel serverless functions
 └── dist/            # Production build
 ```
 
 ## 🧪 Sample Data
 
-After running `npm run db:init`, the database is seeded with:
-- 70+ technicians across all Moroccan cities
+The app automatically seeds on first load:
+- 10 technician profiles across Moroccan cities
 - All service categories (plumbing, electrical, painting, etc.)
 - Realistic ratings and reviews
 

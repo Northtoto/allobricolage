@@ -18,6 +18,7 @@ import { TrackTechnician } from "@/pages/TrackTechnician";
 import TechnicianJobTracking from "@/pages/TechnicianJobTracking";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
+import Debug from "@/pages/Debug";
 import ClientSignup from "@/pages/ClientSignup";
 import TechnicianSignup from "@/pages/TechnicianSignup";
 import NotFound from "@/pages/not-found";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/technicians" component={TechnicianDirectory} />
       <Route path="/technician/:id" component={TechnicianProfile} />
       <Route path="/payment/:bookingId" component={PaymentPage} />
+      <Route path="/debug" component={Debug} />
       <Route path="/track/:bookingId" component={TrackTechnician} />
       <Route path="/technician/track/:bookingId" component={TechnicianJobTracking} />
       <Route path="/login" component={Login} />
