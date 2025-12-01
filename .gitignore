@@ -37,7 +37,6 @@ lerna-debug.log*
 *.sw?
 
 # Database files (using Neon cloud database)
-data/
 *.db
 *.db-shm
 *.db-wal
