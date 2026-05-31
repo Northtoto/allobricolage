@@ -18,6 +18,9 @@ import {
 import type { TechnicianWithUser } from "@shared/schema";
 import { useState } from "react";
 import { BookingModal } from "@/components/booking/BookingModal";
+import { FavoriteButton } from "@/components/design/FavoriteButton";
+import { PortfolioGallery } from "@/components/technician/PortfolioGallery";
+import { BadgeCheck, Shield, Zap, MessageCircle } from "lucide-react";
 
 export default function TechnicianProfile() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +28,21 @@ export default function TechnicianProfile() {
 
   const { data: technician, isLoading, error } = useQuery<TechnicianWithUser>({
     queryKey: ['/api/technicians', id],
+  });
+
+  const { data: favoriteCheck } = useQuery<{ isFavorite: boolean }>({
+    queryKey: ['/api/favorites/check', id],
+    enabled: !!id,
+  });
+
+  const { data: whatsappLink } = useQuery<{ link: string }>({
+    queryKey: ['/api/messages/whatsapp-link', id],
+    enabled: !!id,
+  });
+
+  const { data: verificationStatus } = useQuery<{ status: string; verifiedDocuments: string[]; isVerified: boolean }>({
+    queryKey: ['/api/verification/technician', id],
+    enabled: !!id,
   });
 
   if (isLoading) {
@@ -79,8 +97,8 @@ export default function TechnicianProfile() {
               <div className="flex flex-col items-center text-center">
                 <div className="relative mb-4">
                   <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
-                    <AvatarImage 
-                      src={technician.photo || defaultImage} 
+                    <AvatarImage
+                      src={technician.photo || defaultImage}
                       alt={technician.name}
                       data-testid="img-profile-avatar"
                     />
@@ -88,8 +106,15 @@ export default function TechnicianProfile() {
                       {technician.name.split(" ").map(n => n[0]).join("")}
                     </AvatarFallback>
                   </Avatar>
+                  <div className="absolute -top-2 -right-2 flex gap-1">
+                    <FavoriteButton
+                      technicianId={id!}
+                      initialIsFavorite={favoriteCheck?.isFavorite ?? false}
+                      size="sm"
+                    />
+                  </div>
                   {technician.isPro && (
-                    <Badge 
+                    <Badge
                       className="absolute -bottom-1 -right-1 bg-green-500 text-white border-2 border-background"
                       data-testid="badge-profile-pro"
                     >
@@ -108,6 +133,33 @@ export default function TechnicianProfile() {
                 <div className="flex items-center gap-1 text-muted-foreground text-sm mb-2">
                   <MapPin className="h-4 w-4" />
                   <span data-testid="text-profile-location">{technician.city}</span>
+                </div>
+
+                {/* Verification & Trust Badges */}
+                <div className="flex flex-wrap justify-center gap-1.5 mb-3">
+                  {verificationStatus?.isVerified && (
+                    <Badge className="bg-emerald-500 text-white border-0">
+                      <Shield className="h-3 w-3 mr-1" />
+                      Verifie
+                    </Badge>
+                  )}
+                  {verificationStatus?.verifiedDocuments?.includes("insurance") && (
+                    <Badge className="bg-blue-500 text-white border-0">
+                      <BadgeCheck className="h-3 w-3 mr-1" />
+                      Assure
+                    </Badge>
+                  )}
+                  {(technician as any).emergencyAvailable && (
+                    <Badge className="bg-red-500 text-white border-0">
+                      <Zap className="h-3 w-3 mr-1" />
+                      24/7 Urgence
+                    </Badge>
+                  )}
+                  {(technician as any).subscriptionTier && (technician as any).subscriptionTier !== "free" && (
+                    <Badge className="bg-amber-500 text-white border-0 capitalize">
+                      {(technician as any).subscriptionTier}
+                    </Badge>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 mb-4">
@@ -131,13 +183,30 @@ export default function TechnicianProfile() {
                   </p>
                 </div>
 
-                <Button 
+                <Button
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white text-lg py-6"
                   onClick={() => setShowBooking(true)}
                   data-testid="button-book-profile"
                 >
                   Réserver
                 </Button>
+
+                {whatsappLink?.link && (
+                  <a
+                    href={whatsappLink.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 w-full"
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full py-5 text-[#25D366] border-[#25D366]/30 hover:bg-[#25D366]/10"
+                    >
+                      <MessageCircle className="h-5 w-5 mr-2" />
+                      Contacter sur WhatsApp
+                    </Button>
+                  </a>
+                )}
 
                 <Badge 
                   variant="outline"
@@ -250,6 +319,8 @@ export default function TechnicianProfile() {
                 </ul>
               </Card>
             )}
+
+            <PortfolioGallery technicianId={id!} />
 
             {technician.recentReview && (
               <Card className="p-6">

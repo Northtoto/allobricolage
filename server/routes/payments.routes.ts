@@ -1,0 +1,190 @@
+import { Router, type Request, type Response } from "express";
+import { authenticate } from "@/middleware/auth.ts";
+import { validateBody, validateParams } from "@/middleware/validate-request.ts";
+import { asyncHandler } from "@/middleware/error-handler.ts";
+import { successResponse } from "@/utils/response.ts";
+import { NotFoundError } from "@/utils/errors.ts";
+import { paymentService } from "@/services/payment.service.ts";
+import { paymentRepository } from "@/repositories/payment.repository.ts";
+import { db } from "@/db/index.ts";
+import { payments, bookings, users } from "@/db/schema.ts";
+import { eq } from "drizzle-orm";
+import { z } from "zod";
+
+const router = Router();
+
+const createPaymentSchema = z.object({
+  bookingId: z.string().uuid(),
+  amount: z.number().positive("Amount must be positive"),
+  paymentMethod: z.string(),
+  currency: z.string().default("MAD"),
+});
+
+const idParamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+router.get(
+  "/methods",
+  asyncHandler(async (_req: Request, res: Response) => {
+    res.json(successResponse(paymentService.getPaymentMethods()));
+  })
+);
+
+router.get(
+  "/bank-transfer/details",
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const bookingId = req.query.bookingId as string;
+    const reference = paymentService.generateBankTransferReference(bookingId ?? "default");
+    res.json(successResponse({
+      bankName: "Banque Centrale Populaire",
+      accountNumber: "12345678901234567890",
+      rib: "007810000123456789012349",
+      swift: "BCPCMAMC",
+      reference,
+      recipient: "AlloBricolage SARL",
+    }));
+  })
+);
+
+router.post(
+  "/create",
+  authenticate,
+  validateBody(createPaymentSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await paymentService.processPayment(req.body);
+    res.status(201).json(successResponse(result));
+  })
+);
+
+router.get(
+  "/booking/:id",
+  authenticate,
+  validateParams(idParamSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const payment = await paymentRepository.findByBookingId(req.params.id);
+    res.json(successResponse(payment ?? null));
+  })
+);
+
+router.post(
+  "/:id/confirm",
+  authenticate,
+  validateParams(idParamSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    await paymentService.confirmPayment(req.params.id);
+    res.json(successResponse({ success: true }));
+  })
+);
+
+// Escrow: release payment to technician (after job completion)
+router.post(
+  "/:id/release-escrow",
+  authenticate,
+  validateParams(idParamSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.id, req.params.id))
+      .limit(1);
+
+    if (!payment) {
+      throw new NotFoundError("Payment not found");
+    }
+
+    // Either client releasing or admin
+    const booking = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, payment.bookingId))
+      .limit(1);
+
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    const isAdmin = user[0]?.role === "admin";
+    const isClient = booking[0]?.clientId === userId;
+
+    if (!isAdmin && !isClient) {
+      res.status(403).json({ success: false, error: "Not authorized" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(payments)
+      .set({ escrowStatus: "released", status: "completed", updatedAt: new Date() })
+      .where(eq(payments.id, req.params.id))
+      .returning();
+
+    res.json(successResponse(updated));
+  })
+);
+
+// Escrow: request refund
+router.post(
+  "/:id/request-refund",
+  authenticate,
+  validateParams(idParamSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.id, req.params.id))
+      .limit(1);
+
+    if (!payment) {
+      throw new NotFoundError("Payment not found");
+    }
+
+    const booking = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, payment.bookingId))
+      .limit(1);
+
+    if (booking[0]?.clientId !== userId && booking[0]?.clientName !== (req as any).user.name) {
+      res.status(403).json({ success: false, error: "Not authorized" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(payments)
+      .set({ escrowStatus: "refunded", status: "refunded", updatedAt: new Date() })
+      .where(eq(payments.id, req.params.id))
+      .returning();
+
+    res.json(successResponse(updated));
+  })
+);
+
+// Get escrow status for a booking
+router.get(
+  "/escrow/:bookingId",
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.bookingId, req.params.bookingId))
+      .limit(1);
+
+    if (!payment) {
+      res.json(successResponse(null));
+      return;
+    }
+
+    res.json(successResponse({
+      paymentId: payment.id,
+      amount: payment.amount,
+      escrowStatus: payment.escrowStatus,
+      status: payment.status,
+      createdAt: payment.createdAt,
+    }));
+  })
+);
+
+export default router;

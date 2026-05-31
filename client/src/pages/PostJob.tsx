@@ -53,6 +53,7 @@ export default function PostJob() {
   const [description, setDescription] = useState(initialQuery);
   const [city, setCity] = useState("");
   const [urgency, setUrgency] = useState("normal");
+  const [isEmergency, setIsEmergency] = useState(false);
   const [analysis, setAnalysis] = useState<JobAnalysis | null>(null);
   const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
   const [matches, setMatches] = useState<TechnicianMatch[]>([]);
@@ -293,6 +294,24 @@ export default function PostJob() {
                       </div>
                     </div>
 
+                    {/* Emergency Toggle */}
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-red-100 bg-red-50/50 cursor-pointer hover:bg-red-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={isEmergency}
+                          onChange={(e) => setIsEmergency(e.target.checked)}
+                          className="h-5 w-5 accent-red-500"
+                        />
+                        <div className="flex-1">
+                          <p className="font-semibold text-red-700">Service d'urgence 24/7</p>
+                          <p className="text-sm text-red-600/70">
+                            Artisans disponibles immediatement, meme la nuit. Tarif majoré de 50%.
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
                     {/* Submit */}
                     <Button
                       onClick={handleSubmit}
@@ -420,6 +439,7 @@ export default function PostJob() {
         onClose={() => setIsBookingOpen(false)}
         match={selectedMatch}
         jobId={currentJob?.id || ""}
+        isEmergency={isEmergency}
       />
     </div>
   );

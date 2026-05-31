@@ -8,15 +8,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig(async ({ mode }) => {
   const plugins = [react()];
 
-  // Only load Replit plugins in development and if REPL_ID is set
   if (mode !== "production" && process.env.REPL_ID !== undefined) {
     try {
       const runtimeErrorOverlay = (await import("@replit/vite-plugin-runtime-error-modal")).default;
       const { cartographer } = await import("@replit/vite-plugin-cartographer");
       const { devBanner } = await import("@replit/vite-plugin-dev-banner");
-      
       plugins.push(runtimeErrorOverlay(), cartographer(), devBanner());
-    } catch (e) {
+    } catch {
       // Replit plugins not available, skip them
     }
   }
@@ -35,6 +33,14 @@ export default defineConfig(async ({ mode }) => {
       emptyOutDir: true,
     },
     server: {
+      port: 5173,
+      proxy: {
+        "/api": {
+          target: "http://localhost:5002",
+          changeOrigin: true,
+          secure: false,
+        },
+      },
       fs: {
         strict: true,
         deny: ["**/.*"],

@@ -20,9 +20,10 @@ interface BookingModalProps {
   match?: TechnicianMatch | null;
   technician?: TechnicianWithUser | null;
   jobId?: string;
+  isEmergency?: boolean;
 }
 
-export function BookingModal({ isOpen = true, onClose, match, technician: standaloneTechnician, jobId = "direct" }: BookingModalProps) {
+export function BookingModal({ isOpen = true, onClose, match, technician: standaloneTechnician, jobId = "direct", isEmergency = false }: BookingModalProps) {
   const { t } = useI18n();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -46,34 +47,24 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
   });
 
   const bookingMutation = useMutation({
-    mutationFn: async (data: typeof formData & { jobId: string; technicianId: string }) => {
+    mutationFn: async (data: typeof formData & { jobId: string; technicianId: string; isEmergency?: boolean }) => {
       const response = await apiRequest("POST", "/api/bookings", data);
       return response.json(); // Parse JSON from Response object
     },
     onSuccess: (data: any) => {
-      console.log("✅ Booking created successfully");
-      console.log("📦 Response data:", data);
-      console.log("🆔 Booking ID:", data?.id);
-      
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      
-      // Show success toast
+
       toast({
         title: "Réservation créée!",
         description: "Le technicien a été notifié. Suivez le statut dans votre tableau de bord.",
       });
-      
-      // Redirect to client dashboard
+
       if (data?.id) {
-        console.log("🔀 Redirecting to:", `/client-dashboard`);
-        // Close modal first
         onClose();
-        // Then redirect
         setTimeout(() => {
           setLocation(`/client-dashboard`);
         }, 500);
       } else {
-        console.error("❌ No booking ID returned:", data);
         toast({
           title: "Erreur",
           description: "ID de réservation manquant",
@@ -81,8 +72,7 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
         });
       }
     },
-    onError: (error) => {
-      console.error("❌ Booking error:", error);
+    onError: (_error) => {
       toast({
         title: t("common.error"),
         description: "Impossible de créer la réservation.",
@@ -166,6 +156,7 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
       description: formData.description,
       jobId,
       technicianId: technician.id,
+      isEmergency,
     });
   };
 

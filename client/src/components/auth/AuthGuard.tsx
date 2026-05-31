@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -10,18 +10,14 @@ interface AuthGuardProps {
   redirectTo?: string;
 }
 
-export function AuthGuard({ 
-  children, 
+export function AuthGuard({
+  children,
   requireAuth = true,
   requireRole,
   redirectTo = "/login"
 }: AuthGuardProps) {
   const [, setLocation] = useLocation();
-
-  const { data: user, isLoading, error } = useQuery<{ id: string; username: string; name: string; role: string }>({
-    queryKey: ["/api/auth/me"],
-    retry: false,
-  });
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
     return (
@@ -31,23 +27,21 @@ export function AuthGuard({
     );
   }
 
-  // If auth is required but user is not authenticated
-  if (requireAuth && (!user || error)) {
+  if (requireAuth && !isAuthenticated) {
     setLocation(redirectTo);
     return null;
   }
 
-  // If specific role is required
   if (requireRole && user && user.role !== requireRole) {
     setLocation("/");
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Accès non autorisé
+            Acces non autorise
           </h2>
           <p className="text-gray-600">
-            Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+            Vous n avez pas les permissions necessaires pour acceder a cette page.
           </p>
         </div>
       </div>
@@ -56,7 +50,3 @@ export function AuthGuard({
 
   return <>{children}</>;
 }
-
-
-
-

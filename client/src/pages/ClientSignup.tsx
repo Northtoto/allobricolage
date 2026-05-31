@@ -12,6 +12,7 @@ import { User, Loader2, Building2, Phone, MapPin } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { MOROCCAN_CITIES } from "@shared/schema";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { PasswordStrength, checkPasswordStrength } from "@/components/auth/PasswordStrength";
 
 export default function ClientSignup() {
   const [, setLocation] = useLocation();
@@ -36,8 +37,9 @@ export default function ClientSignup() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 6 caractères", variant: "destructive" });
+    const pwdCheck = checkPasswordStrength(formData.password);
+    if (!pwdCheck.isValid) {
+      toast({ title: "Mot de passe trop faible", description: "Votre mot de passe doit contenir au moins 8 caractères avec majuscule, minuscule, chiffre et symbole.", variant: "destructive" });
       return;
     }
 
@@ -159,32 +161,31 @@ export default function ClientSignup() {
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  disabled={isLoading}
-                  data-testid="input-client-signup-password"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Mot de passe *</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                disabled={isLoading}
+                data-testid="input-client-signup-password"
+              />
+              <PasswordStrength password={formData.password} />
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmer *</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  disabled={isLoading}
-                  data-testid="input-client-signup-confirm-password"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                disabled={isLoading}
+                data-testid="input-client-signup-confirm-password"
+              />
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-client-signup-submit">

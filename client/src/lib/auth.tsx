@@ -1,13 +1,9 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { apiRequest } from "./queryClient";
+import { get, post } from "./api-client";
+import type { User } from "@shared/schema";
 
-export interface AuthUser {
-  id: string;
-  username: string;
-  name?: string;
-  role: "client" | "technician";
-  email?: string;
-  profilePicture?: string;
+export interface AuthUser extends User {
+  role: "client" | "technician" | "admin";
 }
 
 interface TechnicianSignupData {
@@ -40,69 +36,128 @@ interface AuthContextType {
   signupClient: (data: ClientSignupData) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  googleLogin: (googleId: string, profile: { name: string; email: string; picture?: string }) => Promise<void>;
+}
+
+interface AuthResponse {
+  user: User;
+  token: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const TOKEN_KEY = "allobricolage_token";
+const USER_KEY = "allobricolage_user";
+
+function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function getStoredUser(): AuthUser | null {
+  try {
+    const stored = localStorage.getItem(USER_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setAuthState(response: AuthResponse): void {
+  localStorage.setItem(TOKEN_KEY, response.token);
+  localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+}
+
+function clearAuthState(): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(getStoredUser);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user is already logged in on mount
   useEffect(() => {
-    const checkAuth = async () => {
+    const initAuth = async () => {
+      const token = getStoredToken();
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const res = await apiRequest("GET", "/api/auth/me", undefined);
-        const userData = await res.json();
-        setUser(userData);
-      } catch (error) {
-        // User not logged in, that's fine
-        console.log("No active session");
+        const data = await get<AuthUser>("/auth/me");
+        setUser(data);
+        localStorage.setItem(USER_KEY, JSON.stringify(data));
+      } catch {
+        clearAuthState();
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAuth();
+    initAuth();
   }, []);
 
   const login = async (username: string, password: string) => {
-    const res = await apiRequest("POST", "/api/auth/login", { username, password });
-    const userData = await res.json();
-    setUser(userData);
+    const data = await post<AuthResponse>("/auth/login", { username, password });
+    setAuthState(data);
+    setUser(data.user as AuthUser);
   };
 
   const signup = async (username: string, password: string, name: string, role: "client" | "technician") => {
-    const res = await apiRequest("POST", "/api/auth/signup", { username, password, name, role });
-    const userData = await res.json();
-    setUser(userData);
+    const data = await post<AuthResponse>("/auth/signup", { username, password, name, role });
+    setAuthState(data);
+    setUser(data.user as AuthUser);
   };
 
-  const signupTechnician = async (data: TechnicianSignupData) => {
-    const res = await apiRequest("POST", "/api/auth/signup", { 
-      ...data, 
-      role: "technician" 
+  const signupTechnician = async (signupData: TechnicianSignupData) => {
+    const data = await post<AuthResponse>("/auth/signup", {
+      ...signupData,
+      role: "technician",
     });
-    const userData = await res.json();
-    setUser(userData);
+    setAuthState(data);
+    setUser(data.user as AuthUser);
   };
 
-  const signupClient = async (data: ClientSignupData) => {
-    const res = await apiRequest("POST", "/api/auth/signup", { 
-      ...data, 
-      role: "client" 
+  const signupClient = async (signupData: ClientSignupData) => {
+    const data = await post<AuthResponse>("/auth/signup", {
+      ...signupData,
+      role: "client",
     });
-    const userData = await res.json();
-    setUser(userData);
+    setAuthState(data);
+    setUser(data.user as AuthUser);
+  };
+
+  const googleLogin = async (googleId: string, profile: { name: string; email: string; picture?: string }) => {
+    const data = await post<AuthResponse>("/auth/google", { googleId, profile });
+    setAuthState(data);
+    setUser(data.user as AuthUser);
   };
 
   const logout = async () => {
-    await apiRequest("POST", "/api/auth/logout", {});
+    try {
+      await post("/auth/logout", {});
+    } catch {
+      // Ignore logout errors
+    }
+    clearAuthState();
     setUser(null);
+    window.location.reload();
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, signupTechnician, signupClient, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{
+      user,
+      isLoading,
+      login,
+      signup,
+      signupTechnician,
+      signupClient,
+      logout,
+      isAuthenticated: !!user,
+      googleLogin,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -20,8 +20,7 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("🔐 Login form submitted");
-    
+
     if (!formData.username || !formData.password) {
       toast({ title: "Erreur", description: "Veuillez remplir tous les champs", variant: "destructive" });
       return;
@@ -29,32 +28,17 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      console.log("🔐 Calling login function...");
       await login(formData.username, formData.password);
-      console.log("✅ Login function completed");
-      
-      toast({ title: "Succès", description: "Connecté avec succès" });
-      
-      // Redirect based on user role
-      // Get the user from localStorage after login
-      const currentUserStr = localStorage.getItem('allobricolage_current_user');
-      console.log("🔐 Current user from localStorage:", currentUserStr);
-      
-      if (currentUserStr) {
-        const currentUser = JSON.parse(currentUserStr);
-        console.log("🔐 Redirecting to:", currentUser.role === "technician" ? "/technician-dashboard" : "/client-dashboard");
-        
-        if (currentUser.role === "technician") {
-          setLocation("/technician-dashboard");
-        } else {
-          setLocation("/client-dashboard");
-        }
+      toast({ title: "Succes", description: "Connecte avec succes" });
+
+      const stored = localStorage.getItem("allobricolage_user");
+      if (stored) {
+        const user = JSON.parse(stored);
+        setLocation(user.role === "technician" ? "/technician-dashboard" : "/client-dashboard");
       } else {
-        console.log("🔐 No user in localStorage, redirecting to home");
         setLocation("/");
       }
-    } catch (error: any) {
-      console.error("❌ Login error:", error);
+    } catch {
       toast({ title: "Erreur", description: "Identifiants invalides", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -71,9 +55,9 @@ export default function Login() {
               <Wrench className="h-6 w-6 text-primary-foreground" />
             </div>
           </div>
-          
+
           <h1 className="text-2xl font-bold text-center mb-2">Connexion</h1>
-          <p className="text-center text-muted-foreground mb-6">Accédez à votre compte AlloBricolage</p>
+          <p className="text-center text-muted-foreground mb-6">Accedez a votre compte AlloBricolage</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -85,7 +69,6 @@ export default function Login() {
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 disabled={isLoading}
-                data-testid="input-login-username"
               />
             </div>
 
@@ -98,11 +81,10 @@ export default function Login() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 disabled={isLoading}
-                data-testid="input-login-password"
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-login-submit">
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -131,7 +113,6 @@ export default function Login() {
               <button
                 onClick={() => setLocation("/signup")}
                 className="text-primary hover:underline font-medium"
-                data-testid="link-to-signup"
               >
                 S'inscrire
               </button>

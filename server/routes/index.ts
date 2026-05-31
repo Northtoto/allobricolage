@@ -1,0 +1,41 @@
+import { Router } from "express";
+import { apiLimiter } from "@/middleware/rate-limiter.ts";
+import authRoutes from "./auth.routes.ts";
+import jobsRoutes from "./jobs.routes.ts";
+import techniciansRoutes from "./technicians.routes.ts";
+import bookingsRoutes from "./bookings.routes.ts";
+import paymentsRoutes from "./payments.routes.ts";
+import techDashboardRoutes from "./tech-dashboard.routes.ts";
+import clientDashboardRoutes from "./client-dashboard.routes.ts";
+import favoritesRoutes from "./favorites.routes.ts";
+import referralsRoutes from "./referrals.routes.ts";
+import availabilityRoutes from "./availability.routes.ts";
+import verificationRoutes from "./verification.routes.ts";
+import portfolioRoutes from "./portfolio.routes.ts";
+import subscriptionsRoutes from "./subscriptions.routes.ts";
+import messagesRoutes from "./messages.routes.ts";
+import disputesRoutes from "./disputes.routes.ts";
+import adminRoutes from "./admin.routes.ts";
+import miscRoutes from "./misc.routes.ts";
+
+const router = Router();
+
+router.use("/auth", authRoutes);
+router.use("/jobs", apiLimiter, jobsRoutes);
+router.use("/technicians", apiLimiter, techniciansRoutes);
+router.use("/bookings", apiLimiter, bookingsRoutes);
+router.use("/payments", apiLimiter, paymentsRoutes);
+router.use("/technician", apiLimiter, techDashboardRoutes);
+router.use("/client", apiLimiter, clientDashboardRoutes);
+router.use("/favorites", apiLimiter, favoritesRoutes);
+router.use("/referrals", apiLimiter, referralsRoutes);
+router.use("/availability", apiLimiter, availabilityRoutes);
+router.use("/verification", apiLimiter, verificationRoutes);
+router.use("/portfolio", apiLimiter, portfolioRoutes);
+router.use("/subscriptions", apiLimiter, subscriptionsRoutes);
+router.use("/messages", apiLimiter, messagesRoutes);
+router.use("/disputes", apiLimiter, disputesRoutes);
+router.use("/admin", apiLimiter, adminRoutes);
+router.use("/", apiLimiter, miscRoutes);
+
+export default router;

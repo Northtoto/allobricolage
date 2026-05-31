@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+Disallow: /connexion
+Disallow: /inscription
+Disallow: /debug
+Disallow: /client-dashboard
+Disallow: /technician-dashboard
+Disallow: /payment/
+
+Sitemap: https://allobricolage.ma/sitemap.xml

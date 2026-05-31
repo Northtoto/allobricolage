@@ -8,8 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Clock, MapPin, Download, Star, User, Settings, FileText, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Download, Star, User, Settings, FileText, Loader2, Heart, Gift, Copy } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Booking {
   id: string;
@@ -25,6 +27,7 @@ interface Booking {
 
 export default function ClientDashboard() {
   const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   // Redirect if not authenticated or not a client
@@ -38,7 +41,43 @@ export default function ClientDashboard() {
 
   const { data: bookings, isLoading: bookingsLoading } = useQuery<Booking[]>({
     queryKey: ["/api/bookings"],
-    enabled: !!user, // Only fetch if user is logged in
+    enabled: !!user,
+  });
+
+  interface FavoriteItem {
+    id: string;
+    technician: {
+      id: string;
+      name: string;
+      photo: string | null;
+      rating: number;
+      hourlyRate: number;
+      services: string[];
+      isVerified: boolean;
+    };
+  }
+
+  interface ReferralCode { code: string; discountAmount: number }
+  interface ReferralSummary {
+    referrals: any[];
+    total: number;
+    completed: number;
+    totalRewards: number;
+  }
+
+  const { data: favoritesData } = useQuery<FavoriteItem[]>({
+    queryKey: ["/api/favorites"],
+    enabled: !!user,
+  });
+
+  const { data: referralData } = useQuery<ReferralCode>({
+    queryKey: ["/api/referrals/my-code"],
+    enabled: !!user,
+  });
+
+  const { data: myReferrals } = useQuery<ReferralSummary>({
+    queryKey: ["/api/referrals/my-referrals"],
+    enabled: !!user,
   });
 
   // Filter bookings for current user - show only bookings created by this client
@@ -76,10 +115,12 @@ export default function ClientDashboard() {
           </div>
 
           <Tabs defaultValue="active" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+            <TabsList className="grid w-full grid-cols-3 lg:w-[700px] lg:grid-cols-6">
               <TabsTrigger value="active">En cours</TabsTrigger>
               <TabsTrigger value="history">Historique</TabsTrigger>
+              <TabsTrigger value="favorites">Favoris</TabsTrigger>
               <TabsTrigger value="invoices">Factures</TabsTrigger>
+              <TabsTrigger value="referrals">Parrainage</TabsTrigger>
               <TabsTrigger value="profile">Profil</TabsTrigger>
             </TabsList>
 
@@ -108,6 +149,61 @@ export default function ClientDashboard() {
                 pastBookings.map((booking: any) => (
                   <BookingCard key={booking.id} booking={booking} />
                 ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="favorites" className="space-y-4">
+              {(!favoritesData || favoritesData.length === 0) ? (
+                <Card>
+                  <CardContent className="py-10 text-center text-muted-foreground">
+                    <Heart className="h-12 w-12 mx-auto mb-3 text-muted" />
+                    <p>Aucun artisan favori.</p>
+                    <p className="text-sm mt-1">Ajoutez des artisans a vos favoris depuis leur profil.</p>
+                    <Link href="/technicians">
+                      <Button className="mt-4" variant="outline">Parcourir les artisans</Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {favoritesData.map((fav: any) => (
+                    <Card key={fav.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-14 w-14">
+                            <AvatarImage src={fav.technician.photo} />
+                            <AvatarFallback>{fav.technician.name?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold truncate">{fav.technician.name}</h3>
+                              {fav.technician.isVerified && (
+                                <Badge className="bg-emerald-500 text-white text-[10px]">Verifie</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                              <span>{fav.technician.rating?.toFixed(1) ?? "N/A"}</span>
+                              <span className="mx-1">·</span>
+                              <span>{fav.technician.hourlyRate} DH/h</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {fav.technician.services?.slice(0, 3).join(", ")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <Link href={`/technician/${fav.technician.id}`} className="flex-1">
+                            <Button size="sm" variant="outline" className="w-full">Voir le profil</Button>
+                          </Link>
+                          <Link href={`/post-job?technician=${fav.technician.id}`} className="flex-1">
+                            <Button size="sm" className="w-full">Re-reserver</Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </TabsContent>
 
@@ -144,6 +240,86 @@ export default function ClientDashboard() {
               </Card>
             </TabsContent>
 
+            <TabsContent value="referrals">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Gift className="h-5 w-5 text-primary" />
+                    Parrainage
+                  </CardTitle>
+                  <CardDescription>Invitez vos amis et gagnez 50 DH de reduction</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center py-6">
+                    <div className="text-center mb-6">
+                      <p className="text-4xl font-bold text-primary mb-2">50 DH</p>
+                      <p className="text-muted-foreground">par ami parraine</p>
+                    </div>
+
+                    {referralData?.code ? (
+                      <div className="w-full max-w-md">
+                        <div className="flex items-center gap-2 p-4 bg-primary/5 rounded-xl border-2 border-dashed border-primary/30">
+                          <code className="flex-1 text-center font-mono text-lg font-bold text-primary">
+                            {referralData.code}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              navigator.clipboard.writeText(referralData.code);
+                              toast({ title: "Code copie!", description: "Collez-le ou partagez-le avec vos amis." });
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="mt-4 text-center">
+                          <Button
+                            onClick={() => {
+                              const text = `Rejoins-moi sur AlloBricolage et profite de 50 DH de reduction avec mon code: ${referralData.code}`;
+                              navigator.clipboard.writeText(text);
+                              toast({ title: "Message copie!", description: "Partagez-le avec vos amis." });
+                            }}
+                          >
+                            <Gift className="h-4 w-4 mr-2" />
+                            Copier le message de partage
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button onClick={async () => {
+                        const res = await apiRequest("GET", "/api/referrals/my-code");
+                        await res.json();
+                        toast({ title: "Code genere!" });
+                      }}>
+                        Generer mon code
+                      </Button>
+                    )}
+
+                    {myReferrals && (
+                      <div className="mt-8 w-full">
+                        <h3 className="font-semibold mb-3">Vos parrainages</h3>
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-2xl font-bold">{myReferrals.total ?? 0}</p>
+                            <p className="text-xs text-muted-foreground">Total</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-2xl font-bold">{myReferrals.completed ?? 0}</p>
+                            <p className="text-xs text-muted-foreground">Completes</p>
+                          </div>
+                          <div className="p-3 bg-green-50 rounded-lg">
+                            <p className="text-2xl font-bold text-green-600">{myReferrals.totalRewards ?? 0} DH</p>
+                            <p className="text-xs text-muted-foreground">Gagnes</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="profile">
               <Card>
                 <CardHeader>
@@ -152,7 +328,7 @@ export default function ClientDashboard() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-4 mb-6">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src={user?.profilePicture} />
+                      <AvatarImage src={user?.profilePicture ?? undefined} />
                       <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
