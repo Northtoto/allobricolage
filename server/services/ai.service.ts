@@ -1,4 +1,5 @@
 import { logger } from "@/utils/logger.ts";
+import { config } from "@/config/index.ts";
 import type { JobAnalysis, CostEstimate, TechnicianMatch, UpsellSuggestion } from "@/db/schema.ts";
 
 export class AIService {
@@ -54,11 +55,138 @@ export class AIService {
     };
   }
 
+  /**
+   * Estimate the cost of a job. Uses Qwen2.5-7B-Instruct (via Hugging Face
+   * Inference API) to reason over the free-text description when available and
+   * configured; always falls back to the deterministic rule formula so the
+   * estimate never breaks (no API key, timeout, or malformed response).
+   */
   async estimateCost(params: {
     service: string;
     urgency: string;
     complexity: string;
+    description?: string;
   }): Promise<CostEstimate> {
+    const fallback = this.estimateCostByFormula(params);
+
+    if (!config.HUGGINGFACE_API_KEY || !params.description?.trim()) {
+      return fallback;
+    }
+
+    try {
+      const llm = await this.estimateCostWithLLM(params, fallback);
+      return llm ?? fallback;
+    } catch (error) {
+      logger.warn("LLM cost estimation failed, using formula fallback", { error });
+      return fallback;
+    }
+  }
+
+  private async estimateCostWithLLM(
+    params: { service: string; urgency: string; complexity: string; description?: string },
+    fallback: CostEstimate
+  ): Promise<CostEstimate | null> {
+    const prompt = `Tu es un expert en estimation de coûts de bricolage et maintenance au Maroc. Les prix sont en dirhams marocains (MAD).
+
+Estime le coût d'une intervention à partir de ces informations:
+- Service: ${params.service}
+- Urgence: ${params.urgency}
+- Complexité: ${params.complexity}
+- Description du client: "${params.description}"
+
+À titre de repère, une estimation par formule donne: min=${fallback.minCost}, probable=${fallback.likelyCost}, max=${fallback.maxCost} MAD. Ajuste ces valeurs selon les détails de la description (pièces à remplacer, étendue des travaux, etc.).
+
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après, au format:
+{"minCost": <entier MAD>, "likelyCost": <entier MAD>, "maxCost": <entier MAD>, "confidence": <0 à 1>, "explanation": "<courte explication en français>"}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const res = await fetch(
+        `https://api-inference.huggingface.co/models/${config.HF_COST_MODEL}/v1/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.HUGGINGFACE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: config.HF_COST_MODEL,
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.2,
+            max_tokens: 300,
+            response_format: { type: "json_object" },
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      if (!res.ok) {
+        logger.warn("HF inference returned non-OK status", { status: res.status });
+        return null;
+      }
+
+      const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) return null;
+
+      return this.parseLLMEstimate(content, params, fallback);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private parseLLMEstimate(
+    content: string,
+    params: { service: string; urgency: string; complexity: string },
+    fallback: CostEstimate
+  ): CostEstimate | null {
+    const match = content.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+
+    let parsed: { minCost?: unknown; likelyCost?: unknown; maxCost?: unknown; confidence?: unknown; explanation?: unknown };
+    try {
+      parsed = JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+
+    const min = Math.round(Number(parsed.minCost));
+    const likely = Math.round(Number(parsed.likelyCost));
+    const max = Math.round(Number(parsed.maxCost));
+
+    // Validate: must be positive, ordered, and within a sane range of the formula
+    // (guards against hallucinated values). Otherwise fall back.
+    const isValid =
+      [min, likely, max].every((v) => Number.isFinite(v) && v > 0) &&
+      min <= likely &&
+      likely <= max &&
+      likely >= fallback.likelyCost * 0.3 &&
+      likely <= fallback.likelyCost * 5;
+
+    if (!isValid) return null;
+
+    const confidence = Number(parsed.confidence);
+    const explanation = typeof parsed.explanation === "string" && parsed.explanation.trim()
+      ? parsed.explanation.trim()
+      : fallback.explanation;
+
+    return {
+      minCost: min,
+      likelyCost: likely,
+      maxCost: max,
+      confidence: Number.isFinite(confidence) && confidence > 0 && confidence <= 1 ? confidence : 0.8,
+      breakdown: fallback.breakdown,
+      explanation,
+    };
+  }
+
+  private estimateCostByFormula(params: {
+    service: string;
+    urgency: string;
+    complexity: string;
+  }): CostEstimate {
     const baseRates: Record<string, number> = {
       plomberie: 300,
       electricite: 250,

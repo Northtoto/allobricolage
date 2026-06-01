@@ -20,6 +20,8 @@ const envSchema = z.object({
 
   OPENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  HUGGINGFACE_API_KEY: z.string().optional(),
+  HF_COST_MODEL: z.string().default("Qwen/Qwen2.5-7B-Instruct"),
 
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),

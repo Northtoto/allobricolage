@@ -46,6 +46,7 @@ router.post(
       service: analysis.service,
       urgency: urgency ?? analysis.urgency,
       complexity: analysis.complexity,
+      description,
     });
     res.json(successResponse({ analysis, costEstimate }));
   })
