@@ -379,6 +379,47 @@ export const disputes = pgTable("disputes", {
   index("disputes_status_idx").on(table.status),
 ]);
 
+// B2B: business client accounts (cafés, restaurants, hotels, syndics, companies).
+// The demand-side moat — recurring maintenance retainers create guaranteed technician income.
+export const businessProfiles = pgTable("business_profiles", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  companyName: text("company_name").notNull(),
+  businessType: text("business_type").notNull().default("other"), // cafe | restaurant | hotel | retail | office | syndic | other
+  ice: text("ice"), // Identifiant Commun de l'Entreprise (Moroccan business tax ID, for TVA invoicing)
+  city: text("city"),
+  address: text("address"),
+  siteCount: integer("site_count").notNull().default(1),
+  contactName: text("contact_name"),
+  contactPhone: text("contact_phone"),
+  retainerTier: text("retainer_tier").notNull().default("none"), // none | essentiel | pro | enterprise
+  retainerExpiresAt: timestamp("retainer_expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("business_user_idx").on(table.userId),
+  index("business_type_idx").on(table.businessType),
+  index("business_tier_idx").on(table.retainerTier),
+]);
+
+// B2B: recurring maintenance contracts with SLA. The baseload that locks in supply.
+export const businessRetainers = pgTable("business_retainers", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  businessId: varchar("business_id", { length: 36 }).notNull().references(() => businessProfiles.id, { onDelete: "cascade" }),
+  tier: text("tier").notNull(), // essentiel | pro | enterprise
+  priceMonthly: integer("price_monthly").notNull().default(0), // MAD
+  slaHours: integer("sla_hours").notNull().default(48), // guaranteed response time
+  sitesIncluded: integer("sites_included").notNull().default(1),
+  preventiveVisitsPerMonth: integer("preventive_visits_per_month").notNull().default(0),
+  startedAt: timestamp("started_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  isAutoRenew: boolean("is_auto_renew").notNull().default(true),
+  status: text("status").notNull().default("active"), // active | paused | cancelled
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("retainer_business_idx").on(table.businessId),
+  index("retainer_status_idx").on(table.status),
+]);
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertTechnicianSchema = createInsertSchema(technicians).omit({ id: true });
@@ -400,6 +441,8 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertNotificationPreferenceSchema = createInsertSchema(notificationPreferences).omit({ id: true, updatedAt: true });
 export const insertDisputeSchema = createInsertSchema(disputes).omit({ id: true, createdAt: true });
+export const insertBusinessProfileSchema = createInsertSchema(businessProfiles).omit({ id: true, createdAt: true });
+export const insertBusinessRetainerSchema = createInsertSchema(businessRetainers).omit({ id: true, createdAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -442,6 +485,10 @@ export type NotificationPreference = typeof notificationPreferences.$inferSelect
 export type InsertNotificationPreference = z.infer<typeof insertNotificationPreferenceSchema>;
 export type Dispute = typeof disputes.$inferSelect;
 export type InsertDispute = z.infer<typeof insertDisputeSchema>;
+export type BusinessProfile = typeof businessProfiles.$inferSelect;
+export type InsertBusinessProfile = z.infer<typeof insertBusinessProfileSchema>;
+export type BusinessRetainer = typeof businessRetainers.$inferSelect;
+export type InsertBusinessRetainer = z.infer<typeof insertBusinessRetainerSchema>;
 
 export interface TechnicianWithUser {
   id: string;
