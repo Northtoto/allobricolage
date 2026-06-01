@@ -28,7 +28,6 @@ const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
 const SubscriptionPage = lazy(() => import("@/pages/SubscriptionPage"));
 const BusinessLanding = lazy(() => import("@/pages/BusinessLanding"));
 const NotFound = lazy(() => import("@/pages/not-found"));
-const Debug = import.meta.env.DEV ? lazy(() => import("@/pages/Debug")) : null;
 
 function PageLoader() {
   return (
@@ -61,7 +60,6 @@ function Router() {
         <Route path="/subscription" component={SubscriptionPage} />
         <Route path="/entreprises" component={BusinessLanding} />
         <Route path="/business" component={BusinessLanding} />
-        {Debug && <Route path="/debug" component={Debug} />}
         <Route component={NotFound} />
       </Switch>
     </Suspense>

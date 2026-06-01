@@ -5,6 +5,7 @@ import { asyncHandler } from "@/middleware/error-handler.ts";
 import { successResponse } from "@/utils/response.ts";
 import { NotFoundError, ValidationError } from "@/utils/errors.ts";
 import { businessRepository } from "@/repositories/business.repository.ts";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 import { z } from "zod";
 
 const router = Router();
@@ -94,7 +95,7 @@ router.get(
   "/my",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
     const profile = await businessRepository.findProfileByUserId(userId);
     if (!profile) {
       res.json(successResponse({ profile: null, retainer: null }));
@@ -111,7 +112,7 @@ router.post(
   authenticate,
   validateBody(profileSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
     const existing = await businessRepository.findProfileByUserId(userId);
     const profile = existing
       ? await businessRepository.updateProfile(existing.id, req.body)
@@ -126,7 +127,7 @@ router.post(
   authenticate,
   validateBody(retainerSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
     const { tier } = req.body as { tier: RetainerTier };
     const plan = RETAINER_PLANS[tier];
 

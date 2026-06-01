@@ -9,6 +9,7 @@ import { disputes, bookings, technicians, users, payments } from "@/db/schema.ts
 import { eq, count, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 
 const router = Router();
 
@@ -29,7 +30,7 @@ router.post(
   authenticate,
   validateBody(createSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
     const { bookingId, reason, description } = req.body;
 
     // Verify booking belongs to this client
@@ -81,7 +82,7 @@ router.get(
   "/my",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const clientDisputes = await db
       .select({
@@ -152,7 +153,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { resolution, refundAmount } = req.body;
-    const adminId = (req as any).user.id;
+    const adminId = (req as AuthenticatedRequest).user!.id;
 
     const [updated] = await db
       .update(disputes)

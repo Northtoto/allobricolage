@@ -9,6 +9,7 @@ import { verificationDocuments, technicians, users } from "@/db/schema.ts";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.post(
   authenticate,
   validateBody(uploadSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
     const { documentType, documentUrl } = req.body;
 
     // Get technician ID from user
@@ -67,7 +68,7 @@ router.get(
   "/my",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const tech = await db
       .select()
@@ -132,7 +133,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
-    const adminId = (req as any).user.id;
+    const adminId = (req as AuthenticatedRequest).user!.id;
 
     const [updated] = await db
       .update(verificationDocuments)

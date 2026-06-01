@@ -8,6 +8,7 @@ import { availabilitySlots, bookings } from "@/db/schema.ts";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 
 const router = Router();
 
@@ -50,7 +51,7 @@ router.get(
   "/my",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
     const tech = await db
       .select()
       .from(availabilitySlots)
@@ -67,7 +68,7 @@ router.post(
   authenticate,
   validateBody(bulkSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const technicianId = (req as any).user.id;
+    const technicianId = (req as AuthenticatedRequest).user!.id;
     const { slots } = req.body;
 
     // Clear existing slots

@@ -9,6 +9,7 @@ import { messages, bookings, technicians, users } from "@/db/schema.ts";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 
 const router = Router();
 
@@ -57,7 +58,7 @@ router.post(
   authenticate,
   validateBody(sendSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
     const { receiverId, content, bookingId, channel } = req.body;
 
     // Store message

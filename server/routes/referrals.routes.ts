@@ -9,6 +9,7 @@ import { referralCodes, referrals, users } from "@/db/schema.ts";
 import { eq, and, count, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.get(
   "/my-code",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const existing = await db
       .select()
@@ -65,7 +66,7 @@ router.get(
   "/my-referrals",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const result = await db
       .select({

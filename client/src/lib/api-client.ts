@@ -1,4 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+// VITE_BACKEND_URL = backend origin ("" for same-origin / Vite proxy / Express
+// static). The "/api" prefix is always appended here. Kept in sync with the same
+// variable used by queryClient.apiRequest.
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL ?? "";
+const API_BASE_URL = `${BACKEND_BASE}/api`;
 
 export interface ApiResponse<T = unknown> {
   success: boolean;

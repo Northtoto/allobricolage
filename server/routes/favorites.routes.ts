@@ -9,6 +9,7 @@ import { favorites, technicians, users } from "@/db/schema.ts";
 import { eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get(
   "/",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    const clientId = (req as any).user.id;
+    const clientId = (req as AuthenticatedRequest).user!.id;
 
     const results = await db
       .select({
@@ -58,7 +59,7 @@ router.post(
   authenticate,
   validateBody(favoriteBodySchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const clientId = (req as any).user.id;
+    const clientId = (req as AuthenticatedRequest).user!.id;
     const { technicianId } = req.body;
 
     // Check if already favorited
@@ -113,7 +114,7 @@ router.delete(
   authenticate,
   validateParams(idParamSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const clientId = (req as any).user.id;
+    const clientId = (req as AuthenticatedRequest).user!.id;
 
     const existing = await db
       .select()
@@ -140,7 +141,7 @@ router.get(
   authenticate,
   validateParams(idParamSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const clientId = (req as any).user.id;
+    const clientId = (req as AuthenticatedRequest).user!.id;
     const existing = await db
       .select()
       .from(favorites)

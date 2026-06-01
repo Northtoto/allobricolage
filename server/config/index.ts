@@ -43,7 +43,6 @@ const envSchema = z.object({
 
   // Security configuration
   BCRYPT_ROUNDS: z.string().transform((v) => parseInt(v, 10)).default("12"),
-  ENABLE_CSRF: z.string().transform((v) => v === "true").default("false"),
   REQUIRE_HTTPS: z.string().transform((v) => v === "true").default("false"),
   ENABLE_AUDIT_LOG: z.string().transform((v) => v === "true").default("true"),
 });

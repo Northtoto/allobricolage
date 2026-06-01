@@ -9,6 +9,7 @@ import { portfolioImages, technicians } from "@/db/schema.ts";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.get(
   "/my",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const tech = await db
       .select()
@@ -72,7 +73,7 @@ router.post(
   authenticate,
   validateBody(createSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const tech = await db
       .select()
@@ -113,7 +114,7 @@ router.delete(
   authenticate,
   validateParams(idSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const tech = await db
       .select()
@@ -147,7 +148,7 @@ router.post(
   validateBody(z.object({ orderedIds: z.array(z.string().uuid()) })),
   asyncHandler(async (req: Request, res: Response) => {
     const { orderedIds } = req.body;
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const tech = await db
       .select()
