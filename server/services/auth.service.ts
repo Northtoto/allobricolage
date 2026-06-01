@@ -1,4 +1,6 @@
 import bcrypt from "bcryptjs";
+import { OAuth2Client } from "google-auth-library";
+import { config } from "@/config/index.ts";
 import { userRepository } from "@/repositories/user.repository.ts";
 import { technicianRepository } from "@/repositories/technician.repository.ts";
 import { generateToken } from "@/middleware/auth.ts";
@@ -31,9 +33,13 @@ function stripUser(user: User): Omit<User, "password" | "googleId"> {
   return safe as Omit<User, "password" | "googleId">;
 }
 
+// Verifies Google ID tokens against our client ID. Identity is derived ONLY from
+// the cryptographically verified token payload — never from client-supplied fields.
+const googleClient = config.GOOGLE_CLIENT_ID ? new OAuth2Client(config.GOOGLE_CLIENT_ID) : null;
+
 export class AuthService {
   async login(username: string, password: string, req?: Request): Promise<AuthResult> {
-    const lockout = checkLockoutStatus(username);
+    const lockout = await checkLockoutStatus(username);
     if (lockout.isLocked) {
       securityAudit("auth.login.locked", req ?? ({} as Request), {
         username,
@@ -47,14 +53,14 @@ export class AuthService {
     const user = await userRepository.findByUsername(username);
 
     if (!user || !user.password) {
-      recordFailedLogin(username);
+      await recordFailedLogin(username);
       securityAudit("auth.login.failed", req ?? ({} as Request), { username, reason: "invalid_username" });
       throw new UnauthorizedError("Nom d'utilisateur ou mot de passe incorrect");
     }
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      recordFailedLogin(username);
+      await recordFailedLogin(username);
       const remaining = Math.max(0, 5 - (lockout.attempts + 1));
       securityAudit("auth.login.failed", req ?? ({} as Request), {
         username,
@@ -68,7 +74,7 @@ export class AuthService {
       );
     }
 
-    recordSuccessfulLogin(username);
+    await recordSuccessfulLogin(username);
     securityAudit("auth.login.success", req ?? ({} as Request), { username, userId: user.id });
 
     const token = generateToken(user.id, user.role);
@@ -140,33 +146,59 @@ export class AuthService {
     return stripUser(user);
   }
 
-  async googleLogin(googleId: string, profile: {
-    name: string;
-    email: string;
-    picture?: string;
-  }): Promise<AuthResult> {
+  /**
+   * Google Sign-In. `credential` is the Google ID token (JWT) issued by Google
+   * Identity Services on the client. We verify it server-side and trust ONLY the
+   * verified payload — the client cannot assert an arbitrary googleId/email.
+   */
+  async googleLogin(credential: string): Promise<AuthResult> {
+    if (!googleClient || !config.GOOGLE_CLIENT_ID) {
+      throw new UnauthorizedError("Connexion Google non configurée");
+    }
+
+    let googleId: string;
+    let email: string;
+    let name: string;
+    let picture: string | undefined;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: config.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+        throw new Error("incomplete or unverified payload");
+      }
+      googleId = payload.sub;
+      email = payload.email;
+      name = payload.name ?? payload.email.split("@")[0];
+      picture = payload.picture;
+    } catch {
+      throw new UnauthorizedError("Jeton Google invalide");
+    }
+
     let user = await userRepository.findByGoogleId(googleId);
 
     if (!user) {
-      const existingEmail = await userRepository.findByEmail(profile.email);
+      const existingEmail = await userRepository.findByEmail(email);
       if (existingEmail) {
         user = await userRepository.update(existingEmail.id, {
           googleId,
-          profilePicture: profile.picture || existingEmail.profilePicture,
+          profilePicture: picture || existingEmail.profilePicture,
         });
         if (!user) {
           throw new UnauthorizedError("Échec de la mise à jour de l'utilisateur");
         }
       } else {
-        const username = `${profile.email.split("@")[0]}_${Date.now()}`;
+        const username = `${email.split("@")[0]}_${Date.now()}`;
         user = await userRepository.create({
           username,
           password: null,
-          name: profile.name,
-          email: profile.email,
+          name,
+          email,
           role: "client",
           googleId,
-          profilePicture: profile.picture,
+          profilePicture: picture,
           phone: null,
           city: null,
         });

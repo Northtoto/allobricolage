@@ -38,12 +38,8 @@ const signupSchema = z.object({
 );
 
 const googleLoginSchema = z.object({
-  googleId: z.string().min(1),
-  profile: z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-    picture: z.string().url().optional(),
-  }),
+  // Google ID token (JWT) from Google Identity Services — verified server-side.
+  credential: z.string().min(1, "Jeton Google requis"),
 });
 
 const passwordChangeSchema = z.object({
@@ -76,7 +72,7 @@ router.post(
   authLimiter,
   validateBody(googleLoginSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const result = await authService.googleLogin(req.body.googleId, req.body.profile);
+    const result = await authService.googleLogin(req.body.credential);
     res.json(successResponse(result));
   })
 );

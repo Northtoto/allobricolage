@@ -8,6 +8,10 @@ process.env.BASE_URL = "http://localhost:5002";
 process.env.FRONTEND_URL = "http://localhost:5173";
 // Ensure the cost estimator uses the deterministic formula path in tests.
 delete process.env.HUGGINGFACE_API_KEY;
+// Disable Google verifier and Redis deterministically in unit tests (the real
+// .env may carry placeholder values via dotenv).
+process.env.GOOGLE_CLIENT_ID = "";
+process.env.REDIS_URL = "";
 // Gate startServer()/app.listen() in server/index.ts so importing { app } for
 // route tests does not open a port or hit the real database.
 process.env.VERCEL ||= "1";

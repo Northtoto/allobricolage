@@ -99,6 +99,13 @@ async function startServer(): Promise<void> {
       process.exit(1);
     }
 
+    if (isProd && !config.REDIS_URL) {
+      logger.warn(
+        "REDIS_URL not set — rate-limiting & account-lockout use in-memory stores. " +
+          "On serverless/multi-instance this degrades brute-force protection. Set REDIS_URL in production."
+      );
+    }
+
     const port = Number(process.env.PORT) || config.PORT;
     httpServer = app.listen(port, () => {
       logger.info(`Server running on port ${port} in ${isProd ? "production" : "development"} mode`);

@@ -1,9 +1,24 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { type Store } from "express-rate-limit";
+import RedisStore from "rate-limit-redis";
 import { errorResponse } from "@/utils/response.ts";
+import { redisClient } from "@/utils/redis.ts";
 
 const createHandler = (message: string) => (_req: unknown, res: { status: (code: number) => { json: (body: unknown) => void } }) => {
   res.status(429).json(errorResponse("TOO_MANY_REQUESTS", message));
 };
+
+// Use a shared Redis store when configured (required for serverless/multi-instance
+// so counts persist across invocations); otherwise express-rate-limit's default
+// in-memory store. A fresh store instance per limiter keeps their windows isolated.
+function makeStore(prefix: string): Store | undefined {
+  const client = redisClient;
+  if (!client) return undefined;
+  return new RedisStore({
+    sendCommand: (command: string, ...args: string[]) =>
+      client.call(command, ...args) as Promise<never>,
+    prefix: `rl:${prefix}:`,
+  });
+}
 
 /** General API rate limit: 200 requests per 15 minutes per IP */
 export const generalLimiter = rateLimit({
@@ -11,6 +26,7 @@ export const generalLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeStore("general"),
   handler: createHandler("Too many requests, please try again later"),
 });
 
@@ -21,6 +37,7 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false,
+  store: makeStore("auth"),
   handler: createHandler("Too many authentication attempts, please try again later"),
 });
 
@@ -30,6 +47,7 @@ export const apiLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeStore("api"),
   handler: createHandler("API rate limit exceeded"),
 });
 
@@ -39,6 +57,7 @@ export const strictLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeStore("strict"),
   handler: createHandler("Rate limit exceeded for this operation"),
 });
 
@@ -48,6 +67,7 @@ export const passwordChangeLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeStore("pwchange"),
   handler: createHandler("Too many password change attempts"),
 });
 
@@ -57,5 +77,6 @@ export const uploadLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  store: makeStore("upload"),
   handler: createHandler("Too many uploads, please try again later"),
 });

@@ -36,6 +36,11 @@ const envSchema = z.object({
 
   GOOGLE_MAPS_API_KEY: z.string().optional(),
 
+  // Shared store for rate-limiting & account-lockout (required for multi-instance
+  // / serverless so protection persists across invocations). Optional: falls back
+  // to in-memory when unset.
+  REDIS_URL: z.string().optional(),
+
   // Security configuration
   BCRYPT_ROUNDS: z.string().transform((v) => parseInt(v, 10)).default("12"),
   ENABLE_CSRF: z.string().transform((v) => v === "true").default("false"),

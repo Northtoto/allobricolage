@@ -36,7 +36,7 @@ interface AuthContextType {
   signupClient: (data: ClientSignupData) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
-  googleLogin: (googleId: string, profile: { name: string; email: string; picture?: string }) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
 }
 
 interface AuthResponse {
@@ -129,8 +129,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user as AuthUser);
   };
 
-  const googleLogin = async (googleId: string, profile: { name: string; email: string; picture?: string }) => {
-    const data = await post<AuthResponse>("/auth/google", { googleId, profile });
+  const googleLogin = async (credential: string) => {
+    const data = await post<AuthResponse>("/auth/google", { credential });
     setAuthState(data);
     setUser(data.user as AuthUser);
   };
