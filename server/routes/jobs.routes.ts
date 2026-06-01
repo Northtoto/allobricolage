@@ -6,6 +6,7 @@ import { successResponse } from "@/utils/response.ts";
 import { NotFoundError, ForbiddenError } from "@/utils/errors.ts";
 import { MOROCCAN_CITIES } from "@/db/schema.ts";
 import { jobRepository } from "@/repositories/job.repository.ts";
+import { businessRepository } from "@/repositories/business.repository.ts";
 import { aiService } from "@/services/ai.service.ts";
 import type { AuthenticatedRequest } from "@/types/express.ts";
 import { z } from "zod";
@@ -94,10 +95,24 @@ router.post(
       status: "pending",
     });
 
-    const matches = await aiService.matchTechnicians(job.id, job.service, city);
+    // B2B retainer clients get SLA-priority dispatch.
+    const business = await businessRepository.findProfileByUserId(user.id);
+    const retainer = business ? await businessRepository.findActiveRetainer(business.id) : undefined;
+    const priority = retainer?.status === "active";
+
+    const matches = await aiService.matchTechnicians(job.id, job.service, city, {
+      priority,
+      slaHours: retainer?.slaHours,
+    });
     const upsellSuggestions = aiService.getUpsellSuggestions(job.service);
 
-    res.status(201).json(successResponse({ job, matches, upsellSuggestions }));
+    res.status(201).json(successResponse({
+      job,
+      matches,
+      upsellSuggestions,
+      priority,
+      slaHours: priority ? retainer?.slaHours : undefined,
+    }));
   })
 );
 

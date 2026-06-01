@@ -60,6 +60,7 @@ export function Header() {
     { href: "/", label: "Accueil", type: "route" },
     { href: "#services", label: "Services", type: "anchor" },
     { href: "/post-job", label: "Booking", type: "route" },
+    { href: "/entreprises", label: "Entreprises", type: "route" },
     { href: "#about", label: "À propos", type: "anchor" },
     { href: "#stories", label: "Blog", type: "anchor" },
     { href: "#contact", label: "Contact", type: "anchor" },

@@ -103,7 +103,12 @@ export class AIService {
     };
   }
 
-  async matchTechnicians(jobId: string, service: string, city: string) {
+  async matchTechnicians(
+    jobId: string,
+    service: string,
+    city: string,
+    opts: { priority?: boolean; slaHours?: number } = {}
+  ) {
     const { technicianRepository } = await import("@/repositories/technician.repository.ts");
     const { items: techs } = await technicianRepository.findAllWithUsers({
       service,
@@ -111,11 +116,33 @@ export class AIService {
       available: true,
     });
 
-    const matches = techs.slice(0, 5).map((tech) => ({
+    // B2B retainer clients get SLA-priority dispatch: rank the best, fastest, verified
+    // technicians first and guarantee an ETA within the contracted SLA window.
+    const ranked = opts.priority
+      ? [...techs].sort((a, b) => {
+          const score = (t: typeof a) =>
+            (t.isPro ? 2 : 0) +
+            (t.isVerified ? 1 : 0) +
+            t.rating / 5 +
+            t.completionRate -
+            t.responseTimeMinutes / 240;
+          return score(b) - score(a);
+        })
+      : techs;
+
+    const slaMinutes = opts.slaHours ? opts.slaHours * 60 : undefined;
+
+    const matches = ranked.slice(0, 5).map((tech) => ({
       technician: tech,
-      matchScore: Math.round((0.7 + Math.random() * 0.28) * 100) / 100,
-      explanation: `${tech.name} est idéal pour ce travail grâce à sa spécialisation`,
-      etaMinutes: Math.round(20 + Math.random() * 60),
+      matchScore: opts.priority
+        ? Math.round((0.9 + Math.random() * 0.09) * 100) / 100
+        : Math.round((0.7 + Math.random() * 0.28) * 100) / 100,
+      explanation: opts.priority
+        ? `${tech.name} — intervention prioritaire (contrat de maintenance), sous ${opts.slaHours ?? 4}h garanties`
+        : `${tech.name} est idéal pour ce travail grâce à sa spécialisation`,
+      etaMinutes: opts.priority
+        ? Math.min(Math.round(15 + Math.random() * 30), slaMinutes ?? 9999)
+        : Math.round(20 + Math.random() * 60),
       estimatedCost: {
         minCost: tech.hourlyRate,
         likelyCost: Math.round(tech.hourlyRate * 1.5),

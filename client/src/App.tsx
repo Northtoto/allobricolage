@@ -26,6 +26,7 @@ const ClientSignup = lazy(() => import("@/pages/ClientSignup"));
 const TechnicianSignup = lazy(() => import("@/pages/TechnicianSignup"));
 const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
 const SubscriptionPage = lazy(() => import("@/pages/SubscriptionPage"));
+const BusinessLanding = lazy(() => import("@/pages/BusinessLanding"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Debug = import.meta.env.DEV ? lazy(() => import("@/pages/Debug")) : null;
 
@@ -58,6 +59,8 @@ function Router() {
         <Route path="/signup/technician" component={TechnicianSignup} />
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/subscription" component={SubscriptionPage} />
+        <Route path="/entreprises" component={BusinessLanding} />
+        <Route path="/business" component={BusinessLanding} />
         {Debug && <Route path="/debug" component={Debug} />}
         <Route component={NotFound} />
       </Switch>
