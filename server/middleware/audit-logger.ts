@@ -39,8 +39,8 @@ export function securityAudit(event: AuditEvent, req: Request, metadata?: Record
     event,
     userId: authReq.user?.id ?? null,
     username: authReq.user?.username ?? null,
-    ip: req.ip,
-    userAgent: req.headers["user-agent"],
+    ip: req?.ip,
+    userAgent: req?.headers?.["user-agent"],
     metadata,
     timestamp: new Date().toISOString(),
   };

@@ -39,4 +39,13 @@ describe("account lockout (in-memory path)", () => {
     expect(status.remainingAttempts).toBe(5);
     expect(status.attempts).toBe(0);
   });
+
+  it("counts concurrent failed logins without losing increments", async () => {
+    const u = "concurrent-user";
+    // Fire 4 failed logins concurrently — must not undercount (no lost updates).
+    await Promise.all([recordFailedLogin(u), recordFailedLogin(u), recordFailedLogin(u), recordFailedLogin(u)]);
+    const status = await checkLockoutStatus(u);
+    expect(status.attempts).toBe(4);
+    expect(status.remainingAttempts).toBe(1);
+  });
 });

@@ -12,58 +12,18 @@ const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const CLEANUP_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-const REDIS_TTL_SECONDS = Math.ceil((ATTEMPT_WINDOW_MS * 2) / 1000);
+const WINDOW_SECONDS = Math.ceil(ATTEMPT_WINDOW_MS / 1000);
+const LOCK_SECONDS = Math.ceil(LOCKOUT_DURATION_MS / 1000);
 
 function getKey(username: string): string {
   return username.toLowerCase().trim();
 }
-
-function redisKey(username: string): string {
-  return `lockout:${getKey(username)}`;
+function attemptsKey(username: string): string {
+  return `lockout:attempts:${getKey(username)}`;
 }
-
-// Storage abstraction: Redis when configured (persists across serverless
-// invocations / instances), otherwise an in-memory Map. The in-memory store is
-// only safe for a single long-lived process.
-const lockoutMap = new Map<string, LockoutEntry>();
-
-async function readEntry(username: string): Promise<LockoutEntry | undefined> {
-  if (redisClient) {
-    const raw = await redisClient.get(redisKey(username));
-    return raw ? (JSON.parse(raw) as LockoutEntry) : undefined;
-  }
-  return lockoutMap.get(getKey(username));
+function lockKey(username: string): string {
+  return `lockout:locked:${getKey(username)}`;
 }
-
-async function writeEntry(username: string, entry: LockoutEntry): Promise<void> {
-  if (redisClient) {
-    await redisClient.set(redisKey(username), JSON.stringify(entry), "EX", REDIS_TTL_SECONDS);
-    return;
-  }
-  lockoutMap.set(getKey(username), entry);
-}
-
-async function deleteEntry(username: string): Promise<void> {
-  if (redisClient) {
-    await redisClient.del(redisKey(username));
-    return;
-  }
-  lockoutMap.delete(getKey(username));
-}
-
-// Periodic cleanup only applies to the in-memory store; Redis entries expire via TTL.
-function cleanup(): void {
-  if (redisClient) return;
-  const now = Date.now();
-  for (const [key, entry] of Array.from(lockoutMap.entries())) {
-    if (now - entry.lastAttempt > ATTEMPT_WINDOW_MS * 2) {
-      lockoutMap.delete(key);
-    }
-  }
-}
-
-const cleanupTimer = setInterval(cleanup, CLEANUP_INTERVAL_MS);
-cleanupTimer.unref?.();
 
 export interface LockoutStatus {
   isLocked: boolean;
@@ -72,30 +32,69 @@ export interface LockoutStatus {
   attempts: number;
 }
 
-export async function checkLockoutStatus(username: string): Promise<LockoutStatus> {
-  const entry = await readEntry(username);
+// ---------------------------------------------------------------------------
+// Redis path: atomic primitives (INCR / SET EX / PTTL). INCR is atomic, so
+// concurrent failed logins can never undercount attempts (the race the JSON
+// read-modify-write previously had). Window/lock expiry is handled by key TTL.
+// ---------------------------------------------------------------------------
+async function checkRedis(username: string): Promise<LockoutStatus> {
+  const lockTtlMs = await redisClient!.pttl(lockKey(username)); // >0 = locked; -2 none; -1 no-expire
+  if (lockTtlMs > 0) {
+    return { isLocked: true, remainingAttempts: 0, lockedUntil: Date.now() + lockTtlMs, attempts: MAX_ATTEMPTS };
+  }
+  const raw = await redisClient!.get(attemptsKey(username));
+  const attempts = raw ? parseInt(raw, 10) : 0;
+  return { isLocked: false, remainingAttempts: Math.max(0, MAX_ATTEMPTS - attempts), lockedUntil: null, attempts };
+}
+
+async function recordFailedRedis(username: string): Promise<void> {
+  const key = attemptsKey(username);
+  const attempts = await redisClient!.incr(key); // atomic
+  // Set/refresh the window on the first attempt of a new window.
+  if (attempts === 1) {
+    await redisClient!.expire(key, WINDOW_SECONDS);
+  }
+  if (attempts >= MAX_ATTEMPTS) {
+    await redisClient!.set(lockKey(username), "1", "EX", LOCK_SECONDS);
+    logger.warn("Account locked due to failed login attempts", { username: getKey(username), attempts });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// In-memory path: single-threaded Node makes the synchronous read-modify-write
+// atomic within the event loop, so no Redis-style race exists here.
+// ---------------------------------------------------------------------------
+const lockoutMap = new Map<string, LockoutEntry>();
+
+function cleanup(): void {
+  const now = Date.now();
+  for (const [key, entry] of Array.from(lockoutMap.entries())) {
+    if (now - entry.lastAttempt > ATTEMPT_WINDOW_MS * 2) {
+      lockoutMap.delete(key);
+    }
+  }
+}
+const cleanupTimer = setInterval(cleanup, CLEANUP_INTERVAL_MS);
+cleanupTimer.unref?.();
+
+function checkMemory(username: string): LockoutStatus {
+  const key = getKey(username);
+  const entry = lockoutMap.get(key);
   const now = Date.now();
 
-  if (!entry) {
-    return { isLocked: false, remainingAttempts: MAX_ATTEMPTS, lockedUntil: null, attempts: 0 };
-  }
+  if (!entry) return { isLocked: false, remainingAttempts: MAX_ATTEMPTS, lockedUntil: null, attempts: 0 };
 
-  // Lockout period expired
   if (entry.lockedUntil && now >= entry.lockedUntil) {
-    await deleteEntry(username);
+    lockoutMap.delete(key);
     return { isLocked: false, remainingAttempts: MAX_ATTEMPTS, lockedUntil: null, attempts: 0 };
   }
-
   if (entry.lockedUntil) {
     return { isLocked: true, remainingAttempts: 0, lockedUntil: entry.lockedUntil, attempts: entry.attempts };
   }
-
-  // Attempt window expired (reset)
   if (now - entry.lastAttempt > ATTEMPT_WINDOW_MS) {
-    await deleteEntry(username);
+    lockoutMap.delete(key);
     return { isLocked: false, remainingAttempts: MAX_ATTEMPTS, lockedUntil: null, attempts: 0 };
   }
-
   return {
     isLocked: false,
     remainingAttempts: Math.max(0, MAX_ATTEMPTS - entry.attempts),
@@ -104,31 +103,47 @@ export async function checkLockoutStatus(username: string): Promise<LockoutStatu
   };
 }
 
-export async function recordFailedLogin(username: string): Promise<void> {
+function recordFailedMemory(username: string): void {
+  const key = getKey(username);
   const now = Date.now();
-  const existing = await readEntry(username);
+  const existing = lockoutMap.get(key);
 
   if (!existing || now - existing.lastAttempt > ATTEMPT_WINDOW_MS) {
-    await writeEntry(username, { attempts: 1, firstAttempt: now, lastAttempt: now, lockedUntil: null });
+    lockoutMap.set(key, { attempts: 1, firstAttempt: now, lastAttempt: now, lockedUntil: null });
     return;
   }
 
   const attempts = existing.attempts + 1;
   const lockedUntil = attempts >= MAX_ATTEMPTS ? now + LOCKOUT_DURATION_MS : null;
-
-  await writeEntry(username, { ...existing, attempts, lastAttempt: now, lockedUntil });
+  lockoutMap.set(key, { ...existing, attempts, lastAttempt: now, lockedUntil });
 
   if (lockedUntil) {
     logger.warn("Account locked due to failed login attempts", {
-      username: getKey(username),
+      username: key,
       attempts,
       lockedUntil: new Date(lockedUntil).toISOString(),
     });
   }
 }
 
+// ---------------------------------------------------------------------------
+// Public async API (backend-agnostic).
+// ---------------------------------------------------------------------------
+export async function checkLockoutStatus(username: string): Promise<LockoutStatus> {
+  return redisClient ? checkRedis(username) : checkMemory(username);
+}
+
+export async function recordFailedLogin(username: string): Promise<void> {
+  if (redisClient) return recordFailedRedis(username);
+  recordFailedMemory(username);
+}
+
 export async function recordSuccessfulLogin(username: string): Promise<void> {
-  await deleteEntry(username);
+  if (redisClient) {
+    await redisClient.del(attemptsKey(username), lockKey(username));
+    return;
+  }
+  lockoutMap.delete(getKey(username));
 }
 
 export async function getRemainingLockoutSeconds(username: string): Promise<number> {
