@@ -105,6 +105,7 @@ router.get(
 router.patch(
   "/notifications/:id",
   authenticate,
+  validateParams(z.object({ id: z.string().uuid("Identifiant invalide") })),
   asyncHandler(async (req: Request, res: Response) => {
     const notification = await notificationRepository.markAsRead(req.params.id);
     res.json(successResponse(notification));

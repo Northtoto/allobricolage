@@ -3,7 +3,8 @@ import { authenticate } from "@/middleware/auth.ts";
 import { validateBody, validateParams } from "@/middleware/validate-request.ts";
 import { asyncHandler } from "@/middleware/error-handler.ts";
 import { successResponse } from "@/utils/response.ts";
-import { NotFoundError } from "@/utils/errors.ts";
+import { NotFoundError, ForbiddenError } from "@/utils/errors.ts";
+import type { AuthenticatedRequest } from "@/types/express.ts";
 import { paymentService } from "@/services/payment.service.ts";
 import { paymentRepository } from "@/repositories/payment.repository.ts";
 import { db } from "@/db/index.ts";
@@ -84,7 +85,7 @@ router.post(
   authenticate,
   validateParams(idParamSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user!.id;
 
     const [payment] = await db
       .select()
@@ -97,19 +98,22 @@ router.post(
     }
 
     // Either client releasing or admin
-    const booking = await db
+    const [booking] = await db
       .select()
       .from(bookings)
       .where(eq(bookings.id, payment.bookingId))
       .limit(1);
 
-    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-    const isAdmin = user[0]?.role === "admin";
-    const isClient = booking[0]?.clientId === userId;
+    if (!booking) {
+      throw new NotFoundError("Booking not found");
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    const isAdmin = user?.role === "admin";
+    const isClient = booking.clientId === userId;
 
     if (!isAdmin && !isClient) {
-      res.status(403).json({ success: false, error: "Not authorized" });
-      return;
+      throw new ForbiddenError("Not authorized to release this payment");
     }
 
     const [updated] = await db
@@ -128,7 +132,8 @@ router.post(
   authenticate,
   validateParams(idParamSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id;
+    const authUser = (req as AuthenticatedRequest).user!;
+    const userId = authUser.id;
 
     const [payment] = await db
       .select()
@@ -140,15 +145,18 @@ router.post(
       throw new NotFoundError("Payment not found");
     }
 
-    const booking = await db
+    const [booking] = await db
       .select()
       .from(bookings)
       .where(eq(bookings.id, payment.bookingId))
       .limit(1);
 
-    if (booking[0]?.clientId !== userId && booking[0]?.clientName !== (req as any).user.name) {
-      res.status(403).json({ success: false, error: "Not authorized" });
-      return;
+    if (!booking) {
+      throw new NotFoundError("Booking not found");
+    }
+
+    if (booking.clientId !== userId && booking.clientName !== authUser.name) {
+      throw new ForbiddenError("Not authorized to refund this payment");
     }
 
     const [updated] = await db

@@ -1,8 +1,12 @@
 import { Router, type Request, type Response } from "express";
 import { authenticate } from "@/middleware/auth.ts";
 import { asyncHandler } from "@/middleware/error-handler.ts";
+import { validateParams } from "@/middleware/validate-request.ts";
 import { successResponse } from "@/utils/response.ts";
 import { NotFoundError } from "@/utils/errors.ts";
+import { z } from "zod";
+
+const idParamSchema = z.object({ id: z.string().uuid("Identifiant invalide") });
 import { bookingRepository } from "@/repositories/booking.repository.ts";
 import { technicianRepository } from "@/repositories/technician.repository.ts";
 import { jobRepository } from "@/repositories/job.repository.ts";
@@ -46,6 +50,7 @@ router.get(
 router.post(
   "/technician/jobs/:id/accept",
   authenticate,
+  validateParams(idParamSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const booking = await bookingRepository.update(req.params.id, { status: "accepted" });
     res.json(successResponse(booking));
@@ -55,6 +60,7 @@ router.post(
 router.post(
   "/technician/jobs/:id/decline",
   authenticate,
+  validateParams(idParamSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const booking = await bookingRepository.update(req.params.id, { status: "cancelled" });
     res.json(successResponse(booking));

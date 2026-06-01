@@ -12,9 +12,11 @@ const pool = new Pool({
   ssl: config.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
 });
 
+// A transient error on an idle pooled connection (e.g. Neon dropping an idle
+// socket) must not crash the process — log it and let the pool recreate
+// connections on the next query.
 pool.on("error", (err) => {
-  logger.error("Unexpected database pool error", { error: err.message });
-  process.exit(1);
+  logger.error("Unexpected database pool error (recovering)", { error: err.message });
 });
 
 export const db = drizzle(pool, { schema, logger: config.NODE_ENV === "development" });

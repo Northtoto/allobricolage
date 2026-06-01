@@ -71,6 +71,26 @@ if (isProd) {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// Process-level safety net: an unhandled rejection or uncaught exception must be
+// logged, never a silent crash. We log and keep serving on rejections; on a truly
+// uncaught exception we exit so a process manager can restart from a clean state.
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled promise rejection", {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+  });
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught exception — exiting for clean restart", {
+    message: error.message,
+    stack: error.stack,
+  });
+  process.exit(1);
+});
+
+let httpServer: ReturnType<typeof app.listen> | undefined;
+
 async function startServer(): Promise<void> {
   try {
     const connected = await testDatabaseConnection();
@@ -79,8 +99,9 @@ async function startServer(): Promise<void> {
       process.exit(1);
     }
 
-    app.listen(5002, () => {
-      logger.info(`Server running on port 5002 in ${isProd ? "production" : "development"} mode`);
+    const port = Number(process.env.PORT) || config.PORT;
+    httpServer = app.listen(port, () => {
+      logger.info(`Server running on port ${port} in ${isProd ? "production" : "development"} mode`);
     });
   } catch (error) {
     logger.error("Failed to start server", { error });
@@ -88,16 +109,35 @@ async function startServer(): Promise<void> {
   }
 }
 
-process.on("SIGTERM", async () => {
-  logger.info("SIGTERM received. Shutting down gracefully...");
-  await closeDbConnection();
-  process.exit(0);
-});
+async function shutdown(signal: string): Promise<void> {
+  logger.info(`${signal} received. Shutting down gracefully...`);
+  // Force-exit guard: never let a hung connection close block shutdown forever.
+  const forceExit = setTimeout(() => {
+    logger.error("Graceful shutdown timed out — forcing exit");
+    process.exit(1);
+  }, 10000);
+  forceExit.unref();
 
-process.on("SIGINT", async () => {
-  logger.info("SIGINT received. Shutting down gracefully...");
-  await closeDbConnection();
-  process.exit(0);
-});
+  try {
+    if (httpServer) {
+      await new Promise<void>((resolve) => httpServer!.close(() => resolve()));
+    }
+    await closeDbConnection();
+    clearTimeout(forceExit);
+    process.exit(0);
+  } catch (error) {
+    logger.error("Error during shutdown", { error });
+    process.exit(1);
+  }
+}
 
-startServer();
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));
+
+// Only start an HTTP listener when run directly (local/Node host). Under serverless
+// (Vercel) the app is imported and invoked per-request; see api/index.ts.
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export { app };
