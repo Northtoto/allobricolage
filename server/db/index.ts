@@ -4,10 +4,15 @@ import { config } from "@/config/index.ts";
 import { logger } from "@/utils/logger.ts";
 import * as schema from "./schema.ts";
 
+// Under serverless (Vercel) each invocation is short-lived and connections must
+// stay small — rely on Neon's connection pooler (the -pooler DATABASE_URL).
+// On a long-lived Node host, use a larger pool.
+const isServerless = Boolean(process.env.VERCEL);
+
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
+  max: isServerless ? 1 : 20,
+  idleTimeoutMillis: isServerless ? 10000 : 30000,
   connectionTimeoutMillis: 5000,
   ssl: config.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
 });

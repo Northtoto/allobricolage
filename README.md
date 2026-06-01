@@ -1,20 +1,24 @@
-# 🛠️ AlloBricolage - Demo Mode
+# 🛠️ AlloBricolage
 
-> AI-Powered Handyman Marketplace for Moroccan Businesses
+> AI-Powered Handyman Marketplace for Moroccan Businesses & Households
 
-Connect B2B clients (cafés, restaurants, companies) with professional maintenance technicians (plumbers, electricians, painters, etc.) across Morocco.
+Connect B2B clients (cafés, restaurants, hotels, companies) and B2C households with professional maintenance technicians (plumbers, electricians, painters, etc.) across Morocco.
 
-## 🎯 Demo Mode - No Backend Required!
+## 🏗️ Architecture
 
-This application runs entirely in the browser using **LocalStorage** instead of a database. Perfect for demonstrations, portfolios, and testing!
+Full-stack app: a **React + Vite SPA** talking to an **Express + PostgreSQL (Neon) API** over HTTP.
+The client calls the real backend via `client/src/lib/api-client.ts` (base URL `/api`,
+overridable with `VITE_BACKEND_URL`). AI cost estimation uses Qwen2.5-7B-Instruct
+(Hugging Face) with a deterministic formula fallback.
 
-## 🚀 Quick Deploy to Vercel
+## 🚀 Deploy to Vercel (single deployment)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/allobricolage)
+`vercel.json` deploys both the SPA **and** the API as a serverless function
+(`api/index.ts` wraps the Express app), so one Vercel project serves everything.
 
-**No environment variables needed!** Just click deploy and it works.
-
-**📖 [Demo Mode Documentation](./DEMO_MODE.md)**
+**Required environment variables** (set in the Vercel project, or `.env` locally —
+see `.env.example`): `DATABASE_URL`, `SESSION_SECRET`, `JWT_SECRET`. Optional:
+`HUGGINGFACE_API_KEY` (AI estimator), `GOOGLE_*`, `STRIPE_*`, `GOOGLE_MAPS_API_KEY`.
 
 ## ✨ Features
 
@@ -33,14 +37,15 @@ This application runs entirely in the browser using **LocalStorage** instead of 
 ## 🗄️ Tech Stack
 
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS
-- **Storage**: Browser LocalStorage
-- **Deployment**: Vercel (Static Site)
-- **No Backend Required!**
+- **Backend**: Express + TypeScript (Node 20)
+- **Database**: PostgreSQL (Neon) via Drizzle ORM
+- **AI**: Qwen2.5-7B-Instruct (Hugging Face) for cost estimation, with formula fallback
+- **Deployment**: Vercel (SPA + serverless API in one project)
 
 ## 📋 Prerequisites
 
-- Node.js 18+
-- Modern web browser
+- Node.js 20+
+- A PostgreSQL database (Neon recommended) — set `DATABASE_URL`
 
 ## 🎯 Local Development
 
@@ -48,14 +53,17 @@ This application runs entirely in the browser using **LocalStorage** instead of 
 # Install dependencies
 npm install
 
-# Start development server
-npm run dev
+# Copy env template and fill in DATABASE_URL + secrets
+cp .env.example .env
 
-# Start development server
+# Apply the schema to your database
+npm run db:push
+
+# Start API (port 5002) + web (port 5173) together
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+Open `http://localhost:5173` — Vite proxies `/api` to the Express server on 5002.
 
 ## 👤 Demo Accounts
 
@@ -73,46 +81,39 @@ Open `http://localhost:5173` in your browser.
 
 1. **Push to GitHub**: `git push origin main`
 2. **Import to Vercel**: https://vercel.com/new
-3. **Deploy!** (No environment variables needed)
+3. **Set environment variables** in the Vercel project: `DATABASE_URL`, `SESSION_SECRET`,
+   `JWT_SECRET` (and any optional keys above).
+4. **Deploy!** `vercel.json` builds the SPA and deploys `api/index.ts` as the API function.
 
-That's it! The app works entirely in the browser.
+The same Vercel project serves the SPA and the `/api` backend (no separate host needed).
 
 ## 💾 Data Persistence
 
-- All data stored in browser LocalStorage
-- 10 pre-seeded technician profiles
-- Data persists across page refreshes
-- Clear browser cache to reset data
-
-## 🔄 Reset Demo Data
-
-Open browser console (F12) and run:
-```javascript
-localStorage.clear();
-location.reload();
-```
+- All data is stored in PostgreSQL (Neon) via Drizzle ORM
+- The browser keeps only the auth token/session in localStorage
+- Schema changes: `npm run db:generate` then `npm run db:push`
+- Seed sample data: `npm run db:seed`
 
 ## 📱 Application Structure
 
 ```
 ├── client/          # React frontend (SPA)
-│   ├── src/
-│   │   ├── lib/
-│   │   │   ├── localStorage.ts    # Storage service
-│   │   │   ├── apiAdapter.ts      # API routing
-│   │   │   └── mockServices.ts    # Mock services
-│   │   └── data/
-│   │       └── seedData.ts        # Seed data
+│   └── src/
+│       ├── lib/api-client.ts   # HTTP client → /api
+│       └── pages/ components/  # UI
+├── server/          # Express API
+│   ├── routes/ services/ repositories/ middleware/
+│   ├── db/          # Drizzle schema + connection
+│   └── index.ts     # App (exported; listens locally, serverless on Vercel)
+├── api/index.ts     # Vercel serverless entry (wraps the Express app)
 ├── shared/          # Shared types & schema
-└── dist/            # Production build
+└── migrations/      # Drizzle SQL migrations
 ```
 
 ## 🧪 Sample Data
 
-The app automatically seeds on first load:
-- 10 technician profiles across Moroccan cities
-- All service categories (plumbing, electrical, painting, etc.)
-- Realistic ratings and reviews
+Run `npm run db:seed` to populate technician profiles, service categories, and
+realistic ratings/reviews across Moroccan cities.
 
 ## 🤝 Services Available
 
