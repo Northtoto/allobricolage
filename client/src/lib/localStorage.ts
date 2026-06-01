@@ -235,7 +235,7 @@ export class LocalStorageService {
     const newTech: Technician = {
       id: generateId(),
       userId: technician.userId,
-      services: technician.services,
+      services: technician.services || [],
       skills: technician.skills || [],
       bio: technician.bio || null,
       photo: technician.photo || null,

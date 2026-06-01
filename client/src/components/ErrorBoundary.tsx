@@ -24,9 +24,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    if (typeof window !== "undefined" && (window as Record<string, unknown>).__allobricolage_errors) {
-      const errors = (window as Record<string, unknown[]>).__allobricolage_errors;
-      errors.push({ error: error.message, stack: error.stack, info: errorInfo.componentStack, time: new Date().toISOString() });
+    const w = window as unknown as { __allobricolage_errors?: unknown[] };
+    if (typeof window !== "undefined" && Array.isArray(w.__allobricolage_errors)) {
+      w.__allobricolage_errors.push({ error: error.message, stack: error.stack, info: errorInfo.componentStack, time: new Date().toISOString() });
     }
   }
 

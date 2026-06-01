@@ -41,7 +41,7 @@ export function checkPasswordStrength(password: string): PasswordStrengthResult 
   const hasNoRepeat = !/(.)(\1{2,})/.test(password);
   if (!hasNoRepeat) {
     score = Math.max(0, score - 1);
-    requirements.push({ label: "Pas de répétitions" });
+    requirements.push({ label: "Pas de répétitions", met: false });
   }
 
   return {

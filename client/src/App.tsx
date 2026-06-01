@@ -18,7 +18,7 @@ const ClientDashboard = lazy(() => import("@/pages/ClientDashboard"));
 const TechnicianProfile = lazy(() => import("@/pages/TechnicianProfile"));
 const TechnicianDirectory = lazy(() => import("@/pages/TechnicianDirectory"));
 const PaymentPage = lazy(() => import("@/pages/PaymentPage"));
-const TrackTechnician = lazy(() => import("@/pages/TrackTechnician"));
+const TrackTechnician = lazy(() => import("@/pages/TrackTechnician").then((m) => ({ default: m.TrackTechnician })));
 const TechnicianJobTracking = lazy(() => import("@/pages/TechnicianJobTracking"));
 const Login = lazy(() => import("@/pages/Login"));
 const Signup = lazy(() => import("@/pages/Signup"));

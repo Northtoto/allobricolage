@@ -59,11 +59,11 @@ export async function apiRequest(
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 
-export const getQueryFn: <T>(options: {
+export function getQueryFn<T>(options: {
   on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+}): QueryFunction<T> {
+  const unauthorizedBehavior = options.on401;
+  return async ({ queryKey }) => {
     const rawPath = queryKey.join("/");
     // api-client.ts prepends /api — strip it from the query key if already present
     const path = rawPath.replace(/^\/+api(?=\/)/, "") || "/";
@@ -81,6 +81,7 @@ export const getQueryFn: <T>(options: {
       throw error;
     }
   };
+}
 
 export const queryClient = new QueryClient({
   defaultOptions: {

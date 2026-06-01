@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode, type MouseEvent } from "react";
+import { useRef, useState, type ReactNode, type MouseEvent, type CSSProperties } from "react";
 
 /**
  * 2026 Design Pattern: Spotlight/Glow Effect Card
@@ -10,12 +10,14 @@ interface SpotlightCardProps {
   children: ReactNode;
   className?: string;
   glowColor?: string;
+  style?: CSSProperties;
 }
 
 export function SpotlightCard({
   children,
   className = "",
   glowColor = "rgba(59, 130, 246, 0.15)",
+  style,
 }: SpotlightCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -34,6 +36,7 @@ export function SpotlightCard({
     <div
       ref={cardRef}
       className={`relative overflow-hidden group ${className}`}
+      style={style}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}

@@ -168,7 +168,7 @@ export function LocalBusinessSchema(data: LocalBusinessData): null {
   return null;
 }
 
-export function WebsiteSearchSchema(siteUrl: string, searchUrl: string): null {
+export function WebsiteSearchSchema({ siteUrl, searchUrl }: { siteUrl: string; searchUrl: string }): null {
   useEffect(() => {
     const schema = {
       "@context": "https://schema.org",
