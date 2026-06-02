@@ -6,6 +6,7 @@ import { TechnicianCard } from "@/components/design/TechnicianCard";
 import { CheckCircle2, Loader2, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { get } from "@/lib/api-client";
 import type { TechnicianWithUser } from "@shared/schema";
 
 interface FastBookingFlowProps {
@@ -36,9 +37,9 @@ export function FastBookingFlow({ isOpen, onClose, serviceType, isSearch = false
     const [step, setStep] = useState<"searching" | "selection" | "confirming" | "auth-redirect">("searching");
     const [, setLocation] = useLocation();
 
-    // Construct query URL
-    const getQueryUrl = () => {
-        const baseUrl = "/api/technicians";
+    // Build the API path (api-client.get prepends the /api base and unwraps the
+    // { success, data } envelope, so we pass the path WITHOUT the /api prefix).
+    const getQueryPath = () => {
         const params = new URLSearchParams();
         params.append("available", "true");
 
@@ -48,18 +49,14 @@ export function FastBookingFlow({ isOpen, onClose, serviceType, isSearch = false
             const serviceKey = SERVICE_MAPPING[serviceType] || serviceType.toLowerCase();
             params.append("service", serviceKey);
         }
-        
-        return `${baseUrl}?${params.toString()}`;
+
+        return `/technicians?${params.toString()}`;
     };
 
-    // Fetch real technicians
+    // Fetch real technicians (get() returns the unwrapped data array)
     const { data: technicians = [], isLoading } = useQuery<TechnicianWithUser[]>({
         queryKey: ["/api/technicians", serviceType, isSearch],
-        queryFn: async () => {
-            const res = await fetch(getQueryUrl());
-            if (!res.ok) throw new Error("Failed to fetch technicians");
-            return res.json();
-        },
+        queryFn: () => get<TechnicianWithUser[]>(getQueryPath()),
         enabled: isOpen,
     });
 
