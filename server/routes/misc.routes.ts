@@ -3,13 +3,17 @@ import { authenticate, requireRole } from "@/middleware/auth.ts";
 import { validateBody, validateParams, validateQuery } from "@/middleware/validate-request.ts";
 import { asyncHandler } from "@/middleware/error-handler.ts";
 import { successResponse } from "@/utils/response.ts";
+import { NotFoundError } from "@/utils/errors.ts";
 import { reviewRepository } from "@/repositories/review.repository.ts";
 import { notificationRepository } from "@/repositories/notification.repository.ts";
 import { trackingRepository } from "@/repositories/tracking.repository.ts";
 import { technicianRepository } from "@/repositories/technician.repository.ts";
+import { bookingRepository } from "@/repositories/booking.repository.ts";
 import { aiService } from "@/services/ai.service.ts";
 import { securityAudit } from "@/middleware/audit-logger.ts";
+import { haversineDistance } from "@/utils/geo.ts";
 import type { AuthenticatedRequest } from "@/types/express.ts";
+import type { TrackingSession } from "@/db/schema.ts";
 import { strictLimiter, uploadLimiter } from "@/middleware/rate-limiter.ts";
 import { z } from "zod";
 
@@ -168,6 +172,68 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const location = await trackingRepository.findLatestByBookingId(req.params.id);
     res.json(successResponse(location ?? null));
+  })
+);
+
+// Assemble a live tracking session for a booking from existing data (latest
+// technician location + saved job address + technician profile). Returns
+// isActive:false with safe defaults when no location has been shared yet, so the
+// client renders its "tracking not active" state rather than erroring.
+router.get(
+  "/tracking/booking/:id",
+  authenticate,
+  validateParams(z.object({ id: z.string().uuid("Identifiant invalide") })),
+  asyncHandler(async (req: Request, res: Response) => {
+    const bookingId = req.params.id;
+    const booking = await bookingRepository.findById(bookingId);
+    if (!booking) throw new NotFoundError("Booking", bookingId);
+
+    const tech = await technicianRepository.findWithUser(booking.technicianId);
+    const loc = await trackingRepository.findLatestByBookingId(bookingId);
+    const addr = await trackingRepository.findAddressByBookingId(bookingId);
+
+    const currentLocation = loc
+      ? {
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          accuracy: loc.accuracy ?? undefined,
+          heading: loc.heading ?? undefined,
+          speed: loc.speed ?? undefined,
+          timestamp: loc.timestamp,
+        }
+      : null;
+
+    const destination = {
+      address: addr?.address ?? "",
+      latitude: addr?.latitude ?? 0,
+      longitude: addr?.longitude ?? 0,
+    };
+
+    let distanceRemaining = 0;
+    let durationRemaining = 0;
+    let estimatedArrival: Date | null = null;
+    if (currentLocation && addr?.latitude != null && addr?.longitude != null) {
+      const km = haversineDistance(currentLocation.latitude, currentLocation.longitude, addr.latitude, addr.longitude);
+      distanceRemaining = Math.round(km * 1000);
+      const speedKmh = loc?.speed && loc.speed > 1 ? loc.speed : 30; // assume 30 km/h urban when unknown
+      durationRemaining = Math.round((km / speedKmh) * 3600);
+      estimatedArrival = new Date(Date.now() + durationRemaining * 1000);
+    }
+
+    const session: TrackingSession = {
+      bookingId,
+      technicianId: booking.technicianId,
+      technicianName: tech?.name ?? "Technicien",
+      technicianPhone: tech?.phone ?? "",
+      currentLocation,
+      destination,
+      estimatedArrival,
+      distanceRemaining,
+      durationRemaining,
+      isActive: currentLocation !== null,
+    };
+
+    res.json(successResponse({ session }));
   })
 );
 

@@ -88,6 +88,20 @@ router.get(
   })
 );
 
+// IMPORTANT: "/me" must be registered BEFORE "/:id", otherwise Express matches
+// "/me" against the "/:id" param route (id="me") and fails UUID validation (400).
+router.get(
+  "/me",
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as AuthenticatedRequest).user!;
+    const tech = await technicianRepository.findByUserId(user.id);
+    if (!tech) throw new NotFoundError("Technician profile");
+    const techWithUser = await technicianRepository.findWithUser(tech.id);
+    res.json(successResponse(techWithUser));
+  })
+);
+
 router.get(
   "/:id",
   validateParams(idParamSchema),
@@ -104,18 +118,6 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const reviews = await reviewRepository.findByTechnicianId(req.params.id);
     res.json(successResponse(reviews));
-  })
-);
-
-router.get(
-  "/me",
-  authenticate,
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as AuthenticatedRequest).user!;
-    const tech = await technicianRepository.findByUserId(user.id);
-    if (!tech) throw new NotFoundError("Technician profile");
-    const techWithUser = await technicianRepository.findWithUser(tech.id);
-    res.json(successResponse(techWithUser));
   })
 );
 

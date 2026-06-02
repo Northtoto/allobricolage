@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { getErrorMessage } from "@/lib/api-client";
 import { 
   CreditCard, 
   Building2, 
@@ -70,14 +72,14 @@ export default function PaymentPage() {
 
   // Fetch payment status
   const { data: payment } = useQuery<PaymentData>({
-    queryKey: [`/api/payment/booking/${bookingId}`],
+    queryKey: [`/api/payments/booking/${bookingId}`],
     enabled: !!bookingId,
     retry: false,
   });
 
   // Fetch bank transfer details
   const { data: bankDetails } = useQuery<BankDetails>({
-    queryKey: [`/api/payment/bank-transfer/details?bookingId=${bookingId}`],
+    queryKey: [`/api/payments/bank-transfer/details?bookingId=${bookingId}`],
     enabled: paymentMethod === "bank_transfer" && !!bookingId,
   });
 
@@ -98,65 +100,51 @@ export default function PaymentPage() {
   };
 
   const handlePayment = async () => {
+    if (!bookingId) return;
+    const amount = booking?.estimatedCost ?? 0;
+    if (amount <= 0) {
+      toast({
+        title: "Montant indisponible",
+        description: "Le montant de la réservation n'est pas encore défini.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      if (paymentMethod === "cmi") {
-        const response = await fetch("/api/payment/cmi/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookingId,
-            amount: booking?.estimatedCost || 0,
-            returnUrl: `${window.location.origin}/payment/confirm/${bookingId}`,
-          }),
-        });
-        
-        const data = await response.json();
-        if (data.redirectUrl) {
-          window.location.href = data.redirectUrl;
-        }
-      } else if (paymentMethod === "cashplus") {
-        const response = await fetch("/api/payment/cashplus/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookingId,
-            amount: booking?.estimatedCost || 0,
-            clientPhone: booking?.clientPhone || "",
-          }),
-        });
-        
-        const data = await response.json();
-        setCashPlusReference(data.referenceCode);
-        
+      // All methods record the payment via the real authenticated endpoint.
+      // (Dedicated CMI/CashPlus gateway redirects require a backend integration
+      // with merchant credentials — see README; not yet wired.)
+      const response = await apiRequest("POST", "/api/payments/create", {
+        bookingId,
+        amount,
+        paymentMethod,
+        currency: "MAD",
+      });
+      const result = await response.json(); // { paymentId, transactionId, status }
+
+      if (paymentMethod === "bank_transfer") {
         toast({
-          title: "Référence Cash Plus générée",
-          description: "Présentez cette référence dans n'importe quel point Cash Plus",
+          title: "Instructions de virement",
+          description: "Effectuez le virement avec la référence fournie ci-dessous.",
         });
-      } else if (paymentMethod === "bank_transfer") {
-        const response = await fetch("/api/payment/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookingId,
-            amount: booking?.estimatedCost || 0,
-            paymentMethod: "bank_transfer",
-            bankReference,
-          }),
+      } else if (paymentMethod === "cashplus") {
+        setCashPlusReference(result.transactionId ?? "");
+        toast({
+          title: "Demande Cash Plus enregistrée",
+          description: "Présentez la référence dans n'importe quel point Cash Plus.",
         });
-        
-        if (response.ok) {
-          toast({
-            title: "Instructions de virement envoyées",
-            description: "Effectuez le virement avec la référence fournie",
-          });
-        }
+      } else {
+        toast({
+          title: "Demande de paiement enregistrée",
+          description: "Votre paiement est en cours de traitement.",
+        });
       }
     } catch (error) {
-      console.error("Payment error:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors du paiement",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {

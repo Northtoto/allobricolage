@@ -31,4 +31,16 @@ describe("route smoke tests", () => {
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe("NOT_FOUND");
   });
+
+  it("GET /technicians/me is NOT shadowed by /:id (401 auth, not 400 uuid)", async () => {
+    // Regression: /me must be registered before /:id, else it hits the uuid
+    // param route and 400s. Unauthenticated => 401 proves the route resolves.
+    const res = await request(app).get("/api/technicians/me");
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /tracking/booking/:id route exists (401 auth, not 404)", async () => {
+    const res = await request(app).get("/api/tracking/booking/123e4567-e89b-12d3-a456-426614174000");
+    expect(res.status).toBe(401);
+  });
 });
