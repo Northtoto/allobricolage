@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { Star, MapPin, Shield } from "lucide-react";
 import { Link } from "wouter";
 import { TrustBadge, getTrustTier } from "./TrustBadge";
+import { ServiceAvatar } from "@/components/design/ServiceAvatar";
 import type { TechnicianWithUser } from "@shared/schema";
 
 interface TechnicianCardProps {
@@ -25,20 +26,13 @@ export function TechnicianCard({ technician, onBook }: TechnicianCardProps) {
   const trustScore = Math.max(0, Math.min(100, Math.round((baseScore + verificationBonus + reviewBonus + completionBonus + proBonus + responseBonus) * 10) / 10));
   const trustTier = getTrustTier(trustScore);
 
-  const defaultImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(technician.name)}&size=400&background=1e40af&color=fff`;
-
   return (
     <Card
       className="overflow-hidden hover-elevate transition-all bg-card"
       data-testid={`card-technician-${technician.id}`}
     >
-      <div className="relative h-48">
-        <img
-          src={technician.photo || defaultImage}
-          alt={technician.name}
-          className="w-full h-full object-cover"
-          data-testid={`img-technician-${technician.id}`}
-        />
+      <div className="relative h-48" data-testid={`img-technician-${technician.id}`}>
+        <ServiceAvatar service={technician.services[0]} variant="banner" />
         <div className="absolute top-2 right-2 flex gap-2">
           {technician.isPro && (
             <Badge
@@ -193,8 +187,6 @@ export function TechnicianMatchCard({ match, rank, onBook }: TechnicianMatchCard
     return "bg-orange-500 text-white";
   };
 
-  const defaultImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(technician.name)}&size=400&background=1e40af&color=fff`;
-
   return (
     <Card
       className="overflow-hidden hover-elevate transition-all bg-card relative"
@@ -211,11 +203,7 @@ export function TechnicianMatchCard({ match, rank, onBook }: TechnicianMatchCard
       </Badge>
 
       <div className="relative h-48">
-        <img
-          src={technician.photo || defaultImage}
-          alt={technician.name}
-          className="w-full h-full object-cover"
-        />
+        <ServiceAvatar service={technician.services[0]} variant="banner" />
         <div className="absolute top-2 right-2 flex gap-2">
           {technician.isPro && (
             <Badge className="bg-green-500 text-white border-0 rounded-full px-3 py-1 font-semibold">

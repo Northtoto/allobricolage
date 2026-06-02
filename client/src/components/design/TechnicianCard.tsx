@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Star, MapPin, ShieldCheck, MessageCircle, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ServiceAvatar, getServiceMeta } from "./ServiceAvatar";
 
 interface TechnicianCardProps {
     name: string;
@@ -9,7 +10,6 @@ interface TechnicianCardProps {
     reviews: number;
     distance: string;
     price: string;
-    imageUrl: string;
     verified?: boolean;
     onBook?: () => void;
 }
@@ -21,10 +21,10 @@ export function TechnicianCard({
     reviews,
     distance,
     price,
-    imageUrl,
     verified = true,
     onBook
 }: TechnicianCardProps) {
+    const serviceLabel = getServiceMeta(specialty).label;
     return (
         <motion.div
             className="bg-white rounded-3xl p-4 shadow-lg border border-border/50 flex gap-4 items-center"
@@ -32,11 +32,9 @@ export function TechnicianCard({
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -2 }}
         >
-            {/* Avatar */}
+            {/* Service-type avatar */}
             <div className="relative shrink-0">
-                <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-slate-100">
-                    <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
-                </div>
+                <ServiceAvatar service={specialty} variant="tile" className="w-20 h-20 rounded-2xl ring-2 ring-slate-100" />
                 {verified && (
                     <motion.div
                         className="absolute -bottom-2 -right-2 bg-white p-1 rounded-full shadow-sm"
@@ -54,7 +52,7 @@ export function TechnicianCard({
                 <div className="flex justify-between items-start">
                     <div>
                         <h3 className="font-bold text-lg truncate">{name}</h3>
-                        <p className="text-sm text-muted-foreground truncate">{specialty}</p>
+                        <p className="text-sm text-muted-foreground truncate">{serviceLabel}</p>
                     </div>
                     <div className="flex flex-col items-end">
                         <div className="flex items-center gap-1 text-sm font-bold">

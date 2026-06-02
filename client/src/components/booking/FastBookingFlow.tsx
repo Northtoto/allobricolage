@@ -155,7 +155,6 @@ export function FastBookingFlow({ isOpen, onClose, serviceType, isSearch = false
                                                     reviews={tech.reviewCount}
                                                     distance={`${Math.floor(Math.random() * 20) + 5} min`} // Mock distance for now
                                                     price={`${tech.hourlyRate} Dhs`}
-                                                    imageUrl={tech.photo || "https://images.unsplash.com/photo-1556157382-97eda2d622ca?auto=format&fit=crop&w=400&q=80"}
                                                     verified={tech.isVerified}
                                                     onBook={handleBook}
                                                 />
