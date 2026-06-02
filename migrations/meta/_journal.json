@@ -15,6 +15,13 @@
       "when": 1780320068309,
       "tag": "0001_famous_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780440202244,
+      "tag": "0002_groovy_famine",
+      "breakpoints": true
     }
   ]
 }

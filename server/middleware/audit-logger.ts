@@ -15,6 +15,8 @@ export type AuditEvent =
   | "payment.processed"
   | "payment.failed"
   | "review.posted"
+  | "quote.created"
+  | "quote.accepted"
   | "technician.profile_updated"
   | "admin.user_banned"
   | "admin.user_unbanned"

@@ -182,6 +182,20 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après, au fo
     };
   }
 
+  /**
+   * Deterministic price band for a service, used by the quote guardrail to flag
+   * outlier devis. Always synchronous/formula-based (never the LLM) so the
+   * anti-arnaque check is stable and predictable.
+   */
+  priceBand(params: { service: string; urgency: string; complexity: string }): {
+    minCost: number;
+    likelyCost: number;
+    maxCost: number;
+  } {
+    const { minCost, likelyCost, maxCost } = this.estimateCostByFormula(params);
+    return { minCost, likelyCost, maxCost };
+  }
+
   private estimateCostByFormula(params: {
     service: string;
     urgency: string;

@@ -420,6 +420,32 @@ export const businessRetainers = pgTable("business_retainers", {
   index("retainer_status_idx").on(table.status),
 ]);
 
+// P0-1: written devis (quote). A technician proposes a quote for a booking; the
+// client must accept it IN-APP before work starts. The priceFlag is the
+// anti-arnaque guardrail — it marks quotes that fall outside the service's normal
+// price band (computed from the deterministic estimator) so clients see a warning.
+export const quotes = pgTable("quotes", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  bookingId: varchar("booking_id", { length: 36 }).notNull().references(() => bookings.id, { onDelete: "cascade" }),
+  technicianId: varchar("technician_id", { length: 36 }).notNull().references(() => technicians.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id", { length: 36 }).references(() => users.id, { onDelete: "set null" }),
+  description: text("description").notNull(), // what work the price covers
+  laborCost: integer("labor_cost").notNull().default(0),
+  materialsCost: integer("materials_cost").notNull().default(0),
+  amount: integer("amount").notNull(), // total in MAD
+  currency: text("currency").notNull().default("MAD"),
+  status: text("status").notNull().default("pending"), // pending | accepted | rejected | expired
+  priceFlag: text("price_flag").notNull().default("normal"), // normal | above_market | below_market
+  expectedMin: integer("expected_min"), // the band the quote was checked against
+  expectedMax: integer("expected_max"),
+  respondedAt: timestamp("responded_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("quotes_booking_idx").on(table.bookingId),
+  index("quotes_status_idx").on(table.status),
+]);
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertTechnicianSchema = createInsertSchema(technicians).omit({ id: true });
@@ -443,6 +469,7 @@ export const insertNotificationPreferenceSchema = createInsertSchema(notificatio
 export const insertDisputeSchema = createInsertSchema(disputes).omit({ id: true, createdAt: true });
 export const insertBusinessProfileSchema = createInsertSchema(businessProfiles).omit({ id: true, createdAt: true });
 export const insertBusinessRetainerSchema = createInsertSchema(businessRetainers).omit({ id: true, createdAt: true });
+export const insertQuoteSchema = createInsertSchema(quotes).omit({ id: true, createdAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -489,6 +516,8 @@ export type BusinessProfile = typeof businessProfiles.$inferSelect;
 export type InsertBusinessProfile = z.infer<typeof insertBusinessProfileSchema>;
 export type BusinessRetainer = typeof businessRetainers.$inferSelect;
 export type InsertBusinessRetainer = z.infer<typeof insertBusinessRetainerSchema>;
+export type Quote = typeof quotes.$inferSelect;
+export type InsertQuote = z.infer<typeof insertQuoteSchema>;
 
 export interface TechnicianWithUser {
   id: string;
