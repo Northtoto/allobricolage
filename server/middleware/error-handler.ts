@@ -2,7 +2,6 @@ import type { Request, Response, NextFunction } from "express";
 import { AppError, ValidationError, isAppError } from "@/utils/errors.ts";
 import { errorResponse } from "@/utils/response.ts";
 import { logger } from "@/utils/logger.ts";
-import { isDev } from "@/config/index.ts";
 
 export function errorHandler(
   err: Error,
@@ -32,17 +31,17 @@ export function errorHandler(
     return;
   }
 
+  // Full detail is logged server-side only. The client NEVER receives the raw
+  // error message or stack for an unhandled (non-operational) error — that would
+  // leak DB schema, file paths, and internals (information disclosure). This holds
+  // regardless of NODE_ENV so a misconfigured environment can't open the leak.
   logger.error("Unhandled error:", {
     message: err.message,
     stack: err.stack,
   });
 
   res.status(500).json(
-    errorResponse(
-      "INTERNAL_ERROR",
-      isDev ? err.message : "An unexpected error occurred",
-      isDev ? { stack: err.stack } : undefined
-    )
+    errorResponse("INTERNAL_ERROR", "An unexpected error occurred")
   );
 }
 

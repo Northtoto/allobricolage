@@ -26,6 +26,11 @@ export class ReviewRepository {
       .orderBy(desc(reviews.createdAt));
   }
 
+  async findByBookingId(bookingId: string): Promise<Review | undefined> {
+    const results = await db.select().from(reviews).where(eq(reviews.bookingId, bookingId)).limit(1);
+    return results[0];
+  }
+
   async create(data: InsertReview): Promise<Review> {
     const id = uuidv4();
     const result = await db.insert(reviews).values({ ...data, id }).returning();

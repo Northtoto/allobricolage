@@ -3,7 +3,7 @@ import { authenticate, requireRole } from "@/middleware/auth.ts";
 import { validateBody, validateParams, validateQuery } from "@/middleware/validate-request.ts";
 import { asyncHandler } from "@/middleware/error-handler.ts";
 import { successResponse } from "@/utils/response.ts";
-import { NotFoundError } from "@/utils/errors.ts";
+import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from "@/utils/errors.ts";
 import { reviewRepository } from "@/repositories/review.repository.ts";
 import { notificationRepository } from "@/repositories/notification.repository.ts";
 import { trackingRepository } from "@/repositories/tracking.repository.ts";
@@ -21,7 +21,7 @@ const router = Router();
 
 const reviewSchema = z.object({
   technicianId: z.string().uuid("ID technicien invalide"),
-  bookingId: z.string().uuid("ID réservation invalide").optional(),
+  bookingId: z.string().uuid("ID réservation invalide"),
   rating: z.number().min(1).max(5),
   comment: z.string().min(1, "Commentaire requis").max(2000, "Commentaire trop long"),
   serviceQuality: z.number().min(1).max(5).optional(),
@@ -55,12 +55,35 @@ router.post(
   validateBody(reviewSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthenticatedRequest).user!;
+
+    // Anti-fraud: a review must be backed by the reviewer's OWN completed booking
+    // with that technician. Without this, anyone could post fake/defamatory ratings
+    // for any technician. One review per booking; the review is then marked verified.
+    const booking = await bookingRepository.findById(req.body.bookingId);
+    if (!booking) {
+      throw new NotFoundError("Booking", req.body.bookingId);
+    }
+    if (booking.clientId !== user.id) {
+      throw new ForbiddenError("Vous ne pouvez évaluer que vos propres réservations.");
+    }
+    if (booking.technicianId !== req.body.technicianId) {
+      throw new ValidationError("Le technicien ne correspond pas à cette réservation.", { technicianId: "mismatch" });
+    }
+    if (booking.status !== "completed") {
+      throw new ValidationError("Vous ne pouvez évaluer qu'après la fin de l'intervention.", { status: booking.status });
+    }
+    const existing = await reviewRepository.findByBookingId(req.body.bookingId);
+    if (existing) {
+      throw new ConflictError("Cette réservation a déjà été évaluée.");
+    }
+
     const review = await reviewRepository.create({
       ...req.body,
       clientId: user.id,
+      isVerified: true, // backed by a real completed booking
     });
     await technicianRepository.updateRating(req.body.technicianId);
-    securityAudit("review.posted", req, { technicianId: req.body.technicianId, rating: req.body.rating });
+    securityAudit("review.posted", req, { technicianId: req.body.technicianId, rating: req.body.rating, bookingId: req.body.bookingId });
     res.status(201).json(successResponse(review));
   })
 );
