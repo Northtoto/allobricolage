@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
-import { Calendar, Clock, Star, Shield, Loader2, CheckCircle, Wand2, CreditCard } from "lucide-react";
+import { Calendar, Clock, Star, Shield, Loader2, CheckCircle, Wand2, FileText, BadgeCheck, Wallet, MessageSquare, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -36,6 +36,8 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
     description: "",
   });
   const [isEnhancing, setIsEnhancing] = useState(false);
+  // 2-step flow (adopted from TaskRabbit/Urban Company): details → review & confirm.
+  const [step, setStep] = useState<"details" | "review">("details");
 
   const technician = match?.technician || standaloneTechnician;
 
@@ -125,7 +127,8 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Step 1: validate details, then advance to the review/confirm step.
+  const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
 
     // Check if user is authenticated before booking
@@ -148,6 +151,11 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
       });
       return;
     }
+    setStep("review");
+  };
+
+  // Step 2: confirm the booking.
+  const handleConfirm = () => {
     bookingMutation.mutate({
       clientName: formData.clientName,
       clientPhone: formData.clientPhone,
@@ -162,6 +170,7 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
 
   const handleClose = () => {
     setFormData({ clientName: "", clientPhone: "", scheduledDate: "", scheduledTime: "", description: "" });
+    setStep("details");
     onClose();
   };
 
@@ -219,8 +228,9 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
           </div>
         </div>
 
-        {/* Booking Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Step 1 — Details Form */}
+        {step === "details" && (
+        <form onSubmit={handleContinue} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="clientName">{t("booking.name")}</Label>
@@ -325,20 +335,101 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
             <Button
               type="submit"
               className="flex-1"
-              disabled={bookingMutation.isPending}
-              data-testid="button-confirm-booking"
+              data-testid="button-continue-booking"
             >
-              {bookingMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Confirmation...
-                </>
-              ) : (
-                t("booking.confirm")
-              )}
+              Continuer
             </Button>
           </div>
         </form>
+        )}
+
+        {/* Step 2 — Review & Confirm */}
+        {step === "review" && (
+          <div className="space-y-4" data-testid="booking-review-step">
+            {/* Recap */}
+            <div className="rounded-lg border border-border divide-y divide-border">
+              <div className="flex items-center justify-between p-3">
+                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4" /> Date & heure
+                </span>
+                <span className="text-sm font-medium">
+                  {formData.scheduledDate} à {formData.scheduledTime}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3">
+                <span className="text-sm text-muted-foreground">Contact</span>
+                <span className="text-sm font-medium">{formData.clientName} · {formData.clientPhone}</span>
+              </div>
+              <div className="flex items-center justify-between p-3">
+                <span className="text-sm text-muted-foreground">Estimation</span>
+                <span className="text-sm font-semibold text-chart-2">
+                  {match ? `~${match.estimatedCost.likelyCost} ${t("common.mad")}` : `${technician.hourlyRate} ${t("common.mad")}/h`}
+                </span>
+              </div>
+              {formData.description && (
+                <div className="p-3">
+                  <span className="text-sm text-muted-foreground">Description</span>
+                  <p className="text-sm mt-1 line-clamp-3">{formData.description}</p>
+                </div>
+              )}
+            </div>
+
+            {/* What happens next — sets expectations + surfaces the devis trust step */}
+            <div className="rounded-lg bg-muted/50 border border-border p-4">
+              <p className="text-sm font-semibold mb-3">Prochaines étapes</p>
+              <ol className="space-y-2.5 text-sm">
+                <li className="flex items-start gap-2">
+                  <BadgeCheck className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                  <span>Le technicien confirme votre demande (généralement sous 1h).</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <FileText className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span><strong>Vous recevez un devis écrit à valider</strong> avant tout travail — prix transparent, zéro surprise.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Wallet className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                  <span>Vous payez seulement après le service (espèces ou en ligne).</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <span>Suivez et échangez avec le technicien depuis votre tableau de bord.</span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setStep("details")}
+                disabled={bookingMutation.isPending}
+                data-testid="button-back-booking"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" /> Retour
+              </Button>
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={handleConfirm}
+                disabled={bookingMutation.isPending}
+                data-testid="button-confirm-booking"
+              >
+                {bookingMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Confirmation...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Confirmer la réservation
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
