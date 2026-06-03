@@ -13,19 +13,20 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getErrorMessage } from "@/lib/api-client";
 import { 
-  CreditCard, 
-  Building2, 
-  Wallet, 
-  CheckCircle2, 
-  Shield, 
+  CreditCard,
+  Building2,
+  Wallet,
+  CheckCircle2,
+  Shield,
   ArrowLeft,
   Copy,
   Check,
   FileText,
-  Download
+  Download,
+  Banknote
 } from "lucide-react";
 
-type PaymentMethod = "cmi" | "cashplus" | "bank_transfer";
+type PaymentMethod = "cash" | "cmi" | "cashplus" | "bank_transfer";
 
 interface BookingData {
   id: string;
@@ -58,7 +59,9 @@ export default function PaymentPage() {
   const { toast } = useToast();
   const bookingId = params?.bookingId;
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cmi");
+  // Cash after service is the Moroccan default (~84% of payments are cash); online
+  // methods are optional alternatives.
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [loading, setLoading] = useState(false);
   const [cashPlusReference, setCashPlusReference] = useState("");
   const [bankReference, setBankReference] = useState("");
@@ -124,7 +127,12 @@ export default function PaymentPage() {
       });
       const result = await response.json(); // { paymentId, transactionId, status }
 
-      if (paymentMethod === "bank_transfer") {
+      if (paymentMethod === "cash") {
+        toast({
+          title: "Paiement en espèces confirmé",
+          description: "Réglez le technicien en espèces une fois le travail terminé. Rien à payer maintenant.",
+        });
+      } else if (paymentMethod === "bank_transfer") {
         toast({
           title: "Instructions de virement",
           description: "Effectuez le virement avec la référence fournie ci-dessous.",
@@ -238,7 +246,31 @@ export default function PaymentPage() {
                         </p>
                       </div>
                       <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
-                      {/* CMI Payment */}
+                      {/* Cash after service — the Moroccan default, shown first */}
+                      <div
+                        className={`flex items-start space-x-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          paymentMethod === "cash"
+                            ? "border-green-500 bg-green-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => setPaymentMethod("cash")}
+                      >
+                        <RadioGroupItem value="cash" id="cash" className="mt-1" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Banknote className="h-5 w-5 text-green-600" />
+                            <Label htmlFor="cash" className="text-base font-semibold cursor-pointer">
+                              Espèces après le service
+                            </Label>
+                            <Badge className="ml-auto bg-green-600 text-white">Recommandé</Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Payez le technicien en espèces une fois le travail terminé et validé. Aucun paiement à l'avance.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* CMI Payment (online, optional) */}
                       <div
                         className={`flex items-start space-x-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${
                           paymentMethod === "cmi"
@@ -254,10 +286,9 @@ export default function PaymentPage() {
                             <Label htmlFor="cmi" className="text-base font-semibold cursor-pointer">
                               Carte bancaire marocaine (CMI)
                             </Label>
-                            <Badge variant="secondary" className="ml-auto">Recommandé</Badge>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
-                            Paiement sécurisé avec votre carte bancaire marocaine
+                            Paiement en ligne sécurisé avec votre carte bancaire marocaine
                           </p>
                           <div className="flex gap-2 mt-2">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-6" />
@@ -413,6 +444,8 @@ export default function PaymentPage() {
                       >
                         {loading ? (
                           "Traitement en cours..."
+                        ) : paymentMethod === "cash" ? (
+                          "Confirmer (payer en espèces après le service)"
                         ) : paymentMethod === "cmi" ? (
                           "Procéder au paiement"
                         ) : paymentMethod === "cashplus" ? (
