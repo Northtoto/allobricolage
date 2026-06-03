@@ -3,10 +3,11 @@ import { authenticate } from "@/middleware/auth.ts";
 import { validateBody, validateParams } from "@/middleware/validate-request.ts";
 import { asyncHandler } from "@/middleware/error-handler.ts";
 import { successResponse } from "@/utils/response.ts";
-import { NotFoundError, ForbiddenError } from "@/utils/errors.ts";
+import { NotFoundError, ForbiddenError, ValidationError } from "@/utils/errors.ts";
 import type { AuthenticatedRequest } from "@/types/express.ts";
 import { paymentService } from "@/services/payment.service.ts";
 import { paymentRepository } from "@/repositories/payment.repository.ts";
+import { bookingRepository } from "@/repositories/booking.repository.ts";
 import { db } from "@/db/index.ts";
 import { payments, bookings, users } from "@/db/schema.ts";
 import { eq } from "drizzle-orm";
@@ -16,8 +17,11 @@ const router = Router();
 
 const createPaymentSchema = z.object({
   bookingId: z.string().uuid(),
-  amount: z.number().positive("Amount must be positive"),
-  paymentMethod: z.string(),
+  // amount is NOT trusted from the client — the server derives the authoritative
+  // amount from the booking (locked by the accepted devis). Accepted for backward
+  // compat but ignored.
+  amount: z.number().positive().optional(),
+  paymentMethod: z.enum(["cash", "cmi", "cashplus", "bank_transfer", "stripe"]),
   currency: z.string().default("MAD"),
 });
 
@@ -54,7 +58,32 @@ router.post(
   authenticate,
   validateBody(createPaymentSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const result = await paymentService.processPayment(req.body);
+    const user = (req as AuthenticatedRequest).user!;
+
+    // Source of truth for the amount is the booking (set/locked by the accepted
+    // devis) — never the client body. This prevents a client from paying an
+    // arbitrary amount (e.g. 1 MAD) for a job that costs more.
+    const booking = await bookingRepository.findById(req.body.bookingId);
+    if (!booking) {
+      throw new NotFoundError("Booking", req.body.bookingId);
+    }
+    if (user.role !== "admin" && booking.clientId !== user.id) {
+      throw new ForbiddenError("Vous ne pouvez payer que vos propres réservations.");
+    }
+    const amount = booking.estimatedCost;
+    if (!amount || amount <= 0) {
+      throw new ValidationError(
+        "Le montant n'est pas encore défini. Le technicien doit d'abord envoyer un devis.",
+        { amount: "not_set" }
+      );
+    }
+
+    const result = await paymentService.processPayment({
+      bookingId: req.body.bookingId,
+      amount,
+      paymentMethod: req.body.paymentMethod,
+      currency: req.body.currency ?? "MAD",
+    } as never);
     res.status(201).json(successResponse(result));
   })
 );
