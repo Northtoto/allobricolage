@@ -143,6 +143,10 @@ export const payments = pgTable("payments", {
   paymentMethod: text("payment_method").notNull(),
   status: text("status").notNull().default("pending"),
   escrowStatus: text("escrow_status").notNull().default("pending"),
+  // Revenue split (computed by the commission engine at payment time).
+  commissionRate: real("commission_rate").notNull().default(0),
+  commissionAmount: integer("commission_amount").notNull().default(0),
+  technicianPayout: integer("technician_payout").notNull().default(0),
   paymentIntentId: text("payment_intent_id"),
   transactionId: text("transaction_id"),
   bankReference: text("bank_reference"),

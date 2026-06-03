@@ -7,6 +7,16 @@ vi.mock("@/repositories/payment.repository.ts", () => ({
   },
 }));
 vi.mock("@/repositories/notification.repository.ts", () => ({ notificationRepository: {} }));
+// Booking → free-tier technician, non-retainer client (default commission path).
+vi.mock("@/repositories/booking.repository.ts", () => ({
+  bookingRepository: { findById: vi.fn(async () => ({ id: "b1", technicianId: "t1", clientId: "c1" })) },
+}));
+vi.mock("@/repositories/technician.repository.ts", () => ({
+  technicianRepository: { findById: vi.fn(async () => ({ id: "t1", subscriptionTier: "free" })) },
+}));
+vi.mock("@/repositories/business.repository.ts", () => ({
+  businessRepository: { findProfileByUserId: vi.fn(async () => undefined), findActiveRetainer: vi.fn(async () => undefined) },
+}));
 
 import { paymentService } from "./payment.service.ts";
 import { paymentRepository } from "@/repositories/payment.repository.ts";
@@ -47,6 +57,15 @@ describe("processPayment", () => {
     expect(arg.status).toBe("processing");
     expect(arg.paymentIntentId).toMatch(/^pi_/);
     expect(arg.currency).toBe("MAD");
+  });
+
+  it("computes and stores the commission split (free tier = 18%)", async () => {
+    await paymentService.processPayment({ bookingId: "b1", amount: 1000, paymentMethod: "cash" } as never);
+    const arg = (paymentRepository.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(arg.commissionRate).toBe(0.18);
+    expect(arg.commissionAmount).toBe(180);
+    expect(arg.technicianPayout).toBe(820);
+    expect(arg.commissionAmount + arg.technicianPayout).toBe(1000);
   });
 
   it("bank transfers get a bank reference", async () => {
