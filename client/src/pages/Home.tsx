@@ -139,7 +139,7 @@ const testimonials = [
   {
     name: "Sofia Benali",
     company: "Concept Café - Rabat",
-    quote: "AlloBricolage nous a trouvé un plombier en moins de 10 minutes pour sauver le service du midi. Respect des normes, communication impeccable.",
+    quote: "M3allem nous a trouvé un plombier en moins de 10 minutes pour sauver le service du midi. Respect des normes, communication impeccable.",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=60",
     rating: 5,
   },
@@ -480,7 +480,7 @@ function TestimonialsSection() {
             Témoignages
           </span>
           <h2 className="text-5xl md:text-6xl font-bold">
-            Ils adorent <span className="gradient-text-animated">AlloBricolage</span>
+            Ils adorent <span className="gradient-text-animated">M3allem</span>
           </h2>
           <p className="text-xl text-muted-foreground">
             Des centaines de professionnels nous font confiance chaque jour

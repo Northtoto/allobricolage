@@ -52,7 +52,7 @@ export function validatePassword(password: string): PasswordStrength {
     feedback.push("Ajoutez des chiffres et symboles pour plus de sécurité");
   }
 
-  const commonPasswords = ["password", "123456", "qwerty", "admin", "allobricolage", "maroc"];
+  const commonPasswords = ["password", "123456", "qwerty", "admin", "m3allem", "allobricolage", "maroc"];
   const lower = password.toLowerCase();
   if (commonPasswords.some((c) => lower.includes(c))) {
     score = 0;

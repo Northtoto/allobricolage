@@ -78,7 +78,7 @@ export function Header() {
                 <Wrench className="h-6 w-6 text-primary-foreground group-hover:rotate-12 transition-transform duration-300" />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-xl leading-tight gradient-text-animated">AlloBricolage</span>
+                <span className="font-bold text-xl leading-tight gradient-text-animated">M3allem</span>
                 <span className="text-xs text-muted-foreground leading-tight flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                   Powered by AI

@@ -44,7 +44,7 @@ router.get(
       rib: "007810000123456789012349",
       swift: "BCPCMAMC",
       reference,
-      recipient: "AlloBricolage SARL",
+      recipient: "M3allem SARL",
     }));
   })
 );

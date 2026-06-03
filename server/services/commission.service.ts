@@ -1,7 +1,7 @@
 /**
  * Commission engine — the platform's revenue model in code.
  *
- * Every completed payment is split into a platform commission (AlloBricolage's
+ * Every completed payment is split into a platform commission (M3allem's
  * take) and a technician payout. The take rate is tier-based, which is what gives
  * the technician subscription its value: higher tiers pay LESS commission. B2B
  * retainer clients get a preferential flat rate (they already pay a monthly

@@ -71,7 +71,7 @@ export default function AdminDashboard() {
           <Shield className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-2xl font-bold">Administration</h1>
-            <p className="text-muted-foreground text-sm">Tableau de bord AlloBricolage</p>
+            <p className="text-muted-foreground text-sm">Tableau de bord M3allem</p>
           </div>
         </div>
 

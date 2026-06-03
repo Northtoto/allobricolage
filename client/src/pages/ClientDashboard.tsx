@@ -276,7 +276,7 @@ export default function ClientDashboard() {
                         <div className="mt-4 text-center">
                           <Button
                             onClick={() => {
-                              const text = `Rejoins-moi sur AlloBricolage et profite de 50 DH de reduction avec mon code: ${referralData.code}`;
+                              const text = `Rejoins-moi sur M3allem et profite de 50 DH de reduction avec mon code: ${referralData.code}`;
                               navigator.clipboard.writeText(text);
                               toast({ title: "Message copie!", description: "Partagez-le avec vos amis." });
                             }}

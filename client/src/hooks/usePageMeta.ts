@@ -8,7 +8,7 @@ interface PageMetaOptions {
   canonical?: string;
 }
 
-const BASE_TITLE = "AlloBricolage";
+const BASE_TITLE = "M3allem";
 
 export function usePageMeta(options: PageMetaOptions): void {
   useEffect(() => {

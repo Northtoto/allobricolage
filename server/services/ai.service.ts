@@ -319,7 +319,7 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après, au fo
     const responses: { pattern: string[]; response: string }[] = [
       {
         pattern: ["salam", "slt", "cc", "bonjour", "bonsoir"],
-        response: "As-salamu alaykoum ! Ana chatbot AlloBricolage. kifach nqdar n3awnek lyoma ?",
+        response: "As-salamu alaykoum ! Ana chatbot M3allem. kifach nqdar n3awnek lyoma ?",
       },
       {
         pattern: ["kifach", "kif", "comment", "kider"],
@@ -331,7 +331,7 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après, au fo
       },
       {
         pattern: ["plombier", "fuite", "eau", "robinet", "wc"],
-        response: "Bghiti chi plombier ? AlloBricolage 3ndo bazzaf dyal les plombiers certifies f Casa, Rabat, Marrakech... koul chi 7arif 3ndo notes o reviews dyal les clients. Wash bghiti nwerrik chi wahed ?",
+        response: "Bghiti chi plombier ? M3allem 3ndo bazzaf dyal les plombiers certifies f Casa, Rabat, Marrakech... koul chi 7arif 3ndo notes o reviews dyal les clients. Wash bghiti nwerrik chi wahed ?",
       },
       {
         pattern: ["electricien", "courant", "prise", "lumiere", "tableau"],

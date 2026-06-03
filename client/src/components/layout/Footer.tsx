@@ -25,7 +25,7 @@ export function Footer() {
                 <Wrench className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
               </div>
               <div>
-                <p className="font-bold text-2xl gradient-text-animated">AlloBricolage</p>
+                <p className="font-bold text-2xl gradient-text-animated">M3allem</p>
                 <p className="text-xs text-muted-foreground tracking-wide flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                   Innovation & artisans
@@ -91,7 +91,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border/60 mt-12 pt-8 text-sm text-muted-foreground flex flex-col md:flex-row gap-4 items-center justify-between">
-          <p>&copy; {new Date().getFullYear()} AlloBricolage. Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} M3allem. Tous droits réservés.</p>
           <div className="flex gap-4 text-xs">
             <a href="/privacy" className="hover:text-foreground">Politique de confidentialité</a>
             <a href="/terms" className="hover:text-foreground">Conditions d'utilisation</a>

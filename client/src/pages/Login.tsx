@@ -57,7 +57,7 @@ export default function Login() {
           </div>
 
           <h1 className="text-2xl font-bold text-center mb-2">Connexion</h1>
-          <p className="text-center text-muted-foreground mb-6">Accedez a votre compte AlloBricolage</p>
+          <p className="text-center text-muted-foreground mb-6">Accedez a votre compte M3allem</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

@@ -17,7 +17,7 @@ export default function NotFound() {
 
   usePageMeta({
     title: "Page non trouvee - Erreur 404",
-    description: "La page que vous recherchez n'existe pas. Retrouvez un artisan qualifie sur AlloBricolage.",
+    description: "La page que vous recherchez n'existe pas. Retrouvez un artisan qualifie sur M3allem.",
   });
 
   return (

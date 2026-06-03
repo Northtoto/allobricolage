@@ -230,7 +230,7 @@ export function FloatingTools3D({ compact = false }: FloatingTools3DProps) {
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 3, repeat: Infinity }}
             >
-              AlloBricolage
+              M3allem
             </motion.div>
             <motion.p
               className="text-2xl text-muted-foreground"

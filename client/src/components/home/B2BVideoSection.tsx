@@ -27,7 +27,7 @@ export function B2BVideoSection() {
                             className="space-y-4"
                         >
                             <span className="inline-block px-4 py-1.5 rounded-full bg-blue-500/20 text-blue-400 text-sm font-semibold uppercase tracking-wider border border-blue-500/30">
-                                AlloBricolage Business
+                                M3allem Business
                             </span>
                             <h2 className="text-4xl md:text-5xl font-bold leading-tight">
                                 La solution maintenance pour <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">votre entreprise</span>
@@ -90,7 +90,7 @@ export function B2BVideoSection() {
                                 {/* Thumbnail Image */}
                                 <img
                                     src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=80"
-                                    alt="AlloBricolage Business Meeting"
+                                    alt="M3allem Business Meeting"
                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                 />
 
@@ -111,7 +111,7 @@ export function B2BVideoSection() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-blue-400 mb-1">NOUVEAU</p>
-                                            <p className="text-xl font-bold">AlloBricolage pour les Pros</p>
+                                            <p className="text-xl font-bold">M3allem pour les Pros</p>
                                         </div>
                                         <div className="px-3 py-1 rounded-md bg-black/50 backdrop-blur text-xs font-mono border border-white/10">
                                             01:45
@@ -126,7 +126,7 @@ export function B2BVideoSection() {
                                     width="100%"
                                     height="100%"
                                     src="https://www.youtube.com/embed/M7lc1UVf-VE?autoplay=1"
-                                    title="AlloBricolage Business Video"
+                                    title="M3allem Business Video"
                                     frameBorder="0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 /**
- * B2B landing & pricing page — AlloBricolage Pro.
+ * B2B landing & pricing page — M3allem Pro.
  * Targets cafés, restaurants, hotels, syndics & companies with SLA-backed
  * recurring maintenance retainers. Mirrors the server catalog in
  * server/routes/business.routes.ts (RETAINER_PLANS). See docs/GO_TO_MARKET.md.
@@ -118,7 +118,7 @@ export default function BusinessLanding() {
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
               <Building2 className="h-4 w-4" />
-              AlloBricolage Pro — pour les professionnels
+              M3allem Pro — pour les professionnels
             </span>
             <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
               La maintenance de votre commerce,{" "}
@@ -158,7 +158,7 @@ export default function BusinessLanding() {
       <section className="max-w-7xl mx-auto px-4 py-16 md:py-24">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Pourquoi les pros choisissent AlloBricolage
+            Pourquoi les pros choisissent M3allem
           </h2>
           <p className="text-muted-foreground">
             Un réseau dense de techniciens fidélisés grâce aux contrats récurrents :

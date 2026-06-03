@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE - AlloBricolage Color Scheme */
+/* LIGHT MODE - M3allem Color Scheme */
 /* Primary: Royal Blue #1e40af | Secondary: Sunset Orange #ea580c */
 :root {
   /* Primary Colors - Uber Style */
@@ -91,7 +91,7 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-/* DARK MODE - AlloBricolage Color Scheme */
+/* DARK MODE - M3allem Color Scheme */
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);

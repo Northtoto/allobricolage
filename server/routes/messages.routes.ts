@@ -118,7 +118,7 @@ router.get(
       waPhone = `+212${waPhone}`;
     }
 
-    const message = `Bonjour, je suis intéressé(e) par votre service pour la réservation #${bookingId.substring(0, 8)} chez AlloBricolage.`;
+    const message = `Bonjour, je suis intéressé(e) par votre service pour la réservation #${bookingId.substring(0, 8)} chez M3allem.`;
 
     res.json(successResponse({
       phone: waPhone,

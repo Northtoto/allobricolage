@@ -16,7 +16,7 @@ const devFormat = printf(({ level, message, timestamp: ts, stack, ...metadata })
 
 export const logger = winston.createLogger({
   level: isDev ? "debug" : "info",
-  defaultMeta: { service: "allobricolage-api" },
+  defaultMeta: { service: "m3allem-api" },
   transports: [
     new winston.transports.Console({
       format: isDev
@@ -37,7 +37,7 @@ export const logger = winston.createLogger({
 
 export const requestLogger = winston.createLogger({
   level: "info",
-  defaultMeta: { service: "allobricolage-api" },
+  defaultMeta: { service: "m3allem-api" },
   transports: [
     new winston.transports.Console({
       format: combine(

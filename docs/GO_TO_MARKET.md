@@ -1,6 +1,6 @@
-# AlloBricolage — Market Domination Strategy (B2B + B2C, #1 in Morocco)
+# M3allem — Market Domination Strategy (B2B + B2C, #1 in Morocco)
 
-> The plan to make AlloBricolage the **default, category-defining brand** for maintenance & home
+> The plan to make M3allem the **default, category-defining brand** for maintenance & home
 > services in Morocco — **#1 in both B2B and B2C**, ahead of AlloPro, Bricall, Bricole, and Sabab.
 > Bilingual FR/AR + Darija. Local payments (CMI / CashPlus / cash).
 
@@ -14,7 +14,7 @@ Every incumbent in Morocco is **pure B2C peer-to-peer**. That is their fatal wea
 their technicians sit idle between one-off gigs, earn unpredictably, and churn off the platform — so supply
 density and availability stay thin, and the customer experience stays unreliable.
 
-**AlloBricolage wins by attacking from a flank they can't defend:**
+**M3allem wins by attacking from a flank they can't defend:**
 
 ```
    B2B RETAINERS                    SUPPLY DENSITY                   B2C DOMINANCE
@@ -28,7 +28,7 @@ density and availability stay thin, and the customer experience stays unreliable
 ```
 
 - **B2B is the moat-builder:** high trust, high margin, recurring, sticky. It pays for the supply.
-- **B2C is the volume + brand engine:** mass awareness, the verb "AlloBricolage," data density.
+- **B2C is the volume + brand engine:** mass awareness, the verb "M3allem," data density.
 - The two **share the same vetted technician network** — that shared liquidity is the unfair advantage.
   A pure-B2C competitor cannot create guaranteed technician income, so they can never match our
   availability or reliability. **This is why we end up #1 in both.**
@@ -66,12 +66,12 @@ Demand context that shapes tactics:
 
 ## 2. Positioning: own the category, become the verb
 
-**Master brand:** _AlloBricolage — la maintenance de confiance, partout au Maroc._
+**Master brand:** _M3allem — la maintenance de confiance, partout au Maroc._
 Goal: when anything breaks, Moroccans **say the name like a verb**, the way "Allo Taxi" became generic.
 
 Two sub-brands, **one app, one supply network:**
 
-| | **AlloBricolage Pro** (B2B) | **AlloBricolage** (B2C) |
+| | **M3allem Pro** (B2B) | **M3allem** (B2C) |
 |---|---|---|
 | Customer | Cafés, restaurants, hotels, syndics, companies | Households, individuals |
 | Promise | "Technicien vérifié <2h, SLA, facture TVA propre" | "Un pro de confiance, prix affiché, aujourd'hui" |
@@ -171,7 +171,7 @@ once a technician is guaranteed to be nearby and free.
 - **Stickiness:** repeat rate, retainer attach rate, technician retention (the flywheel health metric).
 - **Economics:** realized take rate, CAC by channel, LTV (multi-site B2B LTV is the prize).
 - **Trust funnel:** verification completion %, review coverage %, dispute rate (keep < 2%).
-- **Brand:** branded search volume / "AlloBricolage" mentions — are we becoming the verb?
+- **Brand:** branded search volume / "M3allem" mentions — are we becoming the verb?
 
 ---
 
@@ -179,7 +179,7 @@ once a technician is guaranteed to be nearby and free.
 
 - **Brand collision with AlloPro/Bricall** → own B2B + the master-brand verb; run a trademark check now.
 - **Supply/demand leakage off-platform** → invoicing, dispute protection, retainers, reviews, and
-  perks that only exist on-platform make staying on AlloBricolage the rational choice.
+  perks that only exist on-platform make staying on M3allem the rational choice.
 - **Cash economy / low card adoption** → CashPlus + cash are first-class flows, not afterthoughts.
 - **Thin liquidity if we spread too early** → dominate one city's density before expanding. Always.
 - **Incumbent reaction** → by the time they notice, B2B retainers have locked our supply; they can't

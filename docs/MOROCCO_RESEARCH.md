@@ -1,4 +1,4 @@
-# AlloBricolage — Morocco Market Research → Product Roadmap
+# M3allem — Morocco Market Research → Product Roadmap
 
 > Deep research on what Moroccan service customers actually need, centered on
 > their core pain: **finding a technician they can trust.** Each finding is mapped
@@ -21,7 +21,7 @@ because there's no trustworthy alternative.
 Competitors (Sabab, Bricole) verify ID and show ratings — but **deliberately push
 payment OFF-platform** (0% commission, "arrange payment directly"). That feels
 free, but it means **zero accountability**: no escrow, no guarantee, no recourse
-when the job goes wrong. **That is AlloBricolage's wedge** — be the platform that
+when the job goes wrong. **That is M3allem's wedge** — be the platform that
 *stands behind the work*, which the off-platform players structurally can't.
 
 ---

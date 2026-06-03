@@ -70,7 +70,7 @@ function GlobalSEO() {
   return (
     <>
       <OrganizationSchema
-        name="AlloBricolage"
+        name="M3allem"
         url="https://allobricolage.ma"
         logo="https://allobricolage.ma/logo.png"
         description="Plateforme intelligente pour trouver les meilleurs artisans au Maroc. Matching IA, tarification transparente, service disponible 24/7."
@@ -88,7 +88,7 @@ function GlobalSEO() {
         }}
       />
       <LocalBusinessSchema
-        name="AlloBricolage"
+        name="M3allem"
         description="Service de mise en relation avec des artisans qualifies au Maroc. Plomberie, electricite, peinture, menuiserie et plus."
         url="https://allobricolage.ma"
         telephone="+212522123456"

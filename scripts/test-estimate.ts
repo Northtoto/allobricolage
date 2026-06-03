@@ -19,7 +19,7 @@ const SAMPLE = {
 };
 
 async function main() {
-  console.log("=== AlloBricolage cost-estimator check ===\n");
+  console.log("=== M3allem cost-estimator check ===\n");
 
   if (!config.HUGGINGFACE_API_KEY) {
     console.log("⚠️  HUGGINGFACE_API_KEY is not set.");
