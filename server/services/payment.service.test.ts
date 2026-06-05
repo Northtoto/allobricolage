@@ -90,3 +90,15 @@ describe("confirmPayment", () => {
     expect(patch.paidAt).toBeInstanceOf(Date);
   });
 });
+
+describe("generateCashPlusReference (P1-6)", () => {
+  it("produces a CP-prefixed uppercase reference", () => {
+    expect(paymentService.generateCashPlusReference()).toMatch(/^CP-[0-9A-F]{8}$/);
+  });
+
+  it("produces a unique reference each call", () => {
+    const a = paymentService.generateCashPlusReference();
+    const b = paymentService.generateCashPlusReference();
+    expect(a).not.toBe(b);
+  });
+});

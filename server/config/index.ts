@@ -24,6 +24,11 @@ const envSchema = z.object({
   HF_COST_MODEL: z.string().default("Qwen/Qwen2.5-7B-Instruct"),
   HF_VISION_MODEL: z.string().default("Qwen/Qwen2.5-VL-7B-Instruct"),
 
+  // WhatsApp Business (Cloud API) — P1-5. Optional: when unset, outbound
+  // WhatsApp degrades to a logged no-op so flows never break in dev/test.
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),

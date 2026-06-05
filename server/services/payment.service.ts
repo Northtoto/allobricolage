@@ -55,6 +55,14 @@ export class PaymentService {
     ];
   }
 
+  /**
+   * P1-6 — CashPlus voucher reference. The client pays this code at any CashPlus
+   * agent (no card needed); we reconcile the payment against it later.
+   */
+  generateCashPlusReference(): string {
+    return `CP-${uuidv4().substring(0, 8).toUpperCase()}`;
+  }
+
   async processPayment(data: InsertPayment & { paymentMethodDetails?: Record<string, unknown> }): Promise<{ paymentId: string; transactionId: string; status: string }> {
     const transactionId = `TRX-${uuidv4().substring(0, 8).toUpperCase()}`;
 
@@ -65,10 +73,16 @@ export class PaymentService {
       amount: data.amount,
       currency: data.currency ?? "MAD",
       paymentMethod: data.paymentMethod,
-      status: data.paymentMethod === "cash" ? "pending" : "processing",
+      // Cash and CashPlus settle out-of-band, so they stay pending until collected.
+      status: data.paymentMethod === "cash" || data.paymentMethod === "cashplus" ? "pending" : "processing",
       paymentIntentId: data.paymentMethod === "stripe" ? `pi_${uuidv4()}` : null,
       transactionId,
-      bankReference: data.paymentMethod === "bank_transfer" ? `VIR-${uuidv4().substring(0, 8).toUpperCase()}` : null,
+      bankReference:
+        data.paymentMethod === "bank_transfer"
+          ? `VIR-${uuidv4().substring(0, 8).toUpperCase()}`
+          : data.paymentMethod === "cashplus"
+            ? this.generateCashPlusReference()
+            : null,
       paymentDetails: data.paymentMethodDetails ?? null,
       commissionRate: split.commissionRate,
       commissionAmount: split.commissionAmount,

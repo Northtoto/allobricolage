@@ -9,7 +9,7 @@ import { paymentService } from "@/services/payment.service.ts";
 import { paymentRepository } from "@/repositories/payment.repository.ts";
 import { bookingRepository } from "@/repositories/booking.repository.ts";
 import { db } from "@/db/index.ts";
-import { payments, bookings, users } from "@/db/schema.ts";
+import { payments, bookings, users, technicians } from "@/db/schema.ts";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -148,6 +148,66 @@ router.post(
     const [updated] = await db
       .update(payments)
       .set({ escrowStatus: "released", status: "completed", updatedAt: new Date() })
+      .where(eq(payments.id, req.params.id))
+      .returning();
+
+    res.json(successResponse(updated));
+  })
+);
+
+// P1-6 cash-first: confirm cash (or CashPlus) was collected after the service.
+// The assigned technician — or an admin — marks the out-of-band payment settled.
+router.post(
+  "/:id/confirm-cash",
+  authenticate,
+  validateParams(idParamSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req as AuthenticatedRequest).user!.id;
+
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.id, req.params.id))
+      .limit(1);
+
+    if (!payment) {
+      throw new NotFoundError("Payment not found");
+    }
+
+    if (payment.paymentMethod !== "cash" && payment.paymentMethod !== "cashplus") {
+      throw new ValidationError("Only cash or CashPlus payments can be confirmed as collected", {
+        paymentMethod: payment.paymentMethod,
+      });
+    }
+
+    const [booking] = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, payment.bookingId))
+      .limit(1);
+
+    if (!booking) {
+      throw new NotFoundError("Booking not found");
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    const isAdmin = user?.role === "admin";
+
+    // Resolve whether this user is the booking's technician.
+    const [tech] = await db
+      .select({ userId: technicians.userId })
+      .from(technicians)
+      .where(eq(technicians.id, booking.technicianId))
+      .limit(1);
+    const isAssignedTechnician = tech?.userId === userId;
+
+    if (!isAdmin && !isAssignedTechnician) {
+      throw new ForbiddenError("Only the assigned technician or an admin can confirm cash collection");
+    }
+
+    const [updated] = await db
+      .update(payments)
+      .set({ status: "completed", paidAt: new Date(), updatedAt: new Date() })
       .where(eq(payments.id, req.params.id))
       .returning();
 
