@@ -125,6 +125,9 @@ export const bookings = pgTable("bookings", {
   finalCost: integer("final_cost"),
   actualStartTime: timestamp("actual_start_time"),
   actualEndTime: timestamp("actual_end_time"),
+  // P0-3 trust stack: number of days the work is covered after completion.
+  // Set when the booking is marked completed; 0 means no active guarantee.
+  guaranteePeriodDays: integer("guarantee_period_days").notNull().default(0),
   matchScore: real("match_score"),
   matchExplanation: text("match_explanation"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -372,6 +375,9 @@ export const disputes = pgTable("disputes", {
   technicianId: varchar("technician_id", { length: 36 }).notNull().references(() => technicians.id, { onDelete: "cascade" }),
   reason: text("reason").notNull(),
   description: text("description").notNull(),
+  // P0-3: a warranty claim is a dispute opened inside the guarantee window.
+  // It can trigger a free re-visit rather than (or before) a refund.
+  isWarrantyClaim: boolean("is_warranty_claim").notNull().default(false),
   status: text("status").notNull().default("open"),
   resolution: text("resolution"),
   refundAmount: integer("refund_amount"),

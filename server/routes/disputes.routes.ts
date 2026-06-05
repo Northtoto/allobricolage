@@ -10,12 +10,20 @@ import { eq, count, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import type { AuthenticatedRequest } from "@/types/express.ts";
+import { isUnderWarranty } from "@/services/warranty.service.ts";
 
 const router = Router();
 
 const createSchema = z.object({
   bookingId: z.string().uuid(),
   reason: z.string().min(5).max(200),
+  description: z.string().min(20).max(2000),
+});
+
+// A warranty claim is a dispute the reason is implicit ("garantie") — the
+// client only describes the problem; eligibility is enforced server-side.
+const warrantyClaimSchema = z.object({
+  bookingId: z.string().uuid(),
   description: z.string().min(20).max(2000),
 });
 
@@ -70,6 +78,69 @@ router.post(
         technicianId: bk[0].technicianId,
         reason,
         description,
+      })
+      .returning();
+
+    res.status(201).json(successResponse(dispute));
+  })
+);
+
+// Open a warranty claim ("signaler un problème sous garantie").
+// Same storage as a dispute, but server-guarded by the guarantee window and
+// flagged so admins/UI can fast-track a free re-visit before any refund.
+router.post(
+  "/warranty-claim",
+  authenticate,
+  validateBody(warrantyClaimSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req as AuthenticatedRequest).user!.id;
+    const { bookingId, description } = req.body;
+
+    const bk = await db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.id, bookingId))
+      .limit(1);
+
+    if (!bk.length) {
+      throw new NotFoundError("Booking not found");
+    }
+
+    if (bk[0].clientId !== userId) {
+      res.status(403).json({ success: false, error: "Not authorized" });
+      return;
+    }
+
+    // Server-authoritative eligibility: never trust a client claim of coverage.
+    if (!isUnderWarranty(bk[0])) {
+      res.status(422).json({
+        success: false,
+        error: "This booking is not under warranty",
+      });
+      return;
+    }
+
+    const existing = await db
+      .select()
+      .from(disputes)
+      .where(eq(disputes.bookingId, bookingId))
+      .limit(1);
+
+    if (existing.length > 0) {
+      res.status(409).json({ success: false, error: "A dispute already exists for this booking" });
+      return;
+    }
+
+    const [dispute] = await db
+      .insert(disputes)
+      .values({
+        id: uuidv4(),
+        bookingId,
+        clientId: userId,
+        technicianId: bk[0].technicianId,
+        reason: "garantie",
+        description,
+        isWarrantyClaim: true,
       })
       .returning();
 

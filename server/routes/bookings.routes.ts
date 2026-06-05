@@ -10,6 +10,7 @@ import { jobRepository } from "@/repositories/job.repository.ts";
 import { technicianRepository } from "@/repositories/technician.repository.ts";
 import { notificationRepository } from "@/repositories/notification.repository.ts";
 import type { AuthenticatedRequest } from "@/types/express.ts";
+import { DEFAULT_GUARANTEE_PERIOD_DAYS } from "@/services/warranty.service.ts";
 import { z } from "zod";
 
 const router = Router();
@@ -157,7 +158,15 @@ router.patch(
       throw new ForbiddenError("Action non autorisée");
     }
 
-    const updated = await bookingRepository.update(req.params.id, { status: req.body.status });
+    // P0-3: on completion, stamp the finish time and open the guarantee window
+    // so the client can claim a free re-visit if the work fails.
+    const updates: Record<string, unknown> = { status: req.body.status };
+    if (req.body.status === "completed" && booking.status !== "completed") {
+      updates.actualEndTime = booking.actualEndTime ?? new Date();
+      updates.guaranteePeriodDays = DEFAULT_GUARANTEE_PERIOD_DAYS;
+    }
+
+    const updated = await bookingRepository.update(req.params.id, updates);
     securityAudit("booking.status_changed", req, {
       bookingId: req.params.id,
       from: booking.status,
