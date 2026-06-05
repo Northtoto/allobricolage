@@ -10,11 +10,16 @@ import { eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import type { AuthenticatedRequest } from "@/types/express.ts";
+import { computeVerificationLadder } from "@/utils/verification-ladder.ts";
 
 const router = Router();
 
 const uploadSchema = z.object({
-  documentType: z.enum(["cin", "diploma", "insurance", "trade_license", "photo_id"]),
+  // P0-4 ladder: "selfie" (liveness) pairs with "cin" for the identity rung;
+  // "ofppt_diploma" is the recognized Moroccan trade credential.
+  documentType: z.enum([
+    "cin", "selfie", "diploma", "ofppt_diploma", "insurance", "trade_license", "photo_id",
+  ]),
   documentUrl: z.string().url(),
 });
 
@@ -91,6 +96,7 @@ router.get(
       status: tech[0].verificationStatus,
       isVerified: tech[0].isVerified,
       documents: docs,
+      verification: computeVerificationLadder(docs, { completedJobs: tech[0].completedJobs }),
     }));
   })
 );
@@ -154,10 +160,13 @@ router.post(
         .where(eq(verificationDocuments.technicianId, updated.technicianId));
 
       const hasCIN = allDocs.some((d) => d.documentType === "cin" && d.status === "verified");
-      const hasPhotoID = allDocs.some((d) => d.documentType === "photo_id" && d.status === "verified");
+      const hasFace = allDocs.some(
+        (d) => (d.documentType === "selfie" || d.documentType === "photo_id") && d.status === "verified"
+      );
 
-      // Mark as verified if they have at least CIN + photo
-      if (hasCIN && hasPhotoID) {
+      // Mark as verified once identity is established (CIN + a liveness selfie or
+      // legacy photo ID). The granular tier comes from the verification ladder.
+      if (hasCIN && hasFace) {
         await db
           .update(technicians)
           .set({ isVerified: true, verificationStatus: "verified" })
@@ -178,6 +187,7 @@ router.get(
       .select({
         isVerified: technicians.isVerified,
         verificationStatus: technicians.verificationStatus,
+        completedJobs: technicians.completedJobs,
       })
       .from(technicians)
       .where(eq(technicians.id, id))
@@ -197,9 +207,12 @@ router.get(
       ));
 
     res.json(successResponse({
-      ...tech[0],
+      isVerified: tech[0].isVerified,
+      verificationStatus: tech[0].verificationStatus,
       verifiedDocuments: docs.map((d) => d.documentType),
       documentCount: docs.length,
+      // P0-4: the tier + "what's verified" checklist the card renders.
+      verification: computeVerificationLadder(docs, { completedJobs: tech[0].completedJobs }),
     }));
   })
 );
