@@ -20,6 +20,17 @@ const analyzeSchema = z.object({
   urgency: z.enum(["low", "normal", "high", "emergency"]).default("normal"),
 });
 
+// Photo → estimate. The image is an inline data URL; cap its size (~8 MB of
+// base64) so a client can't push a huge payload through the vision pipeline.
+const analyzeImageSchema = z.object({
+  imageDataUrl: z
+    .string()
+    .regex(/^data:image\/(jpeg|jpg|png|webp);base64,/, "Image invalide")
+    .max(8_000_000, "Image trop volumineuse"),
+  description: z.string().max(5000, "Description trop longue").optional(),
+  urgency: z.enum(["low", "normal", "high", "emergency"]).optional(),
+});
+
 const createJobSchema = z.object({
   description: z.string().min(1, "Description requise").max(5000, "Trop longue"),
   analysis: z.object({
@@ -56,24 +67,19 @@ router.post(
   "/analyze-image",
   authenticate,
   requireRole("client", "admin"),
-  asyncHandler(async (_req: Request, res: Response) => {
-    res.json(successResponse({
-      analysis: {
-        service: "plomberie",
-        subServices: ["Réparation"],
-        urgency: "normal",
-        complexity: "moderate",
-        estimatedDuration: "2-3 heures",
-        confidence: 0.75,
-        extractedKeywords: ["réparation", "urgent"],
-        language: "fr",
-      },
-      costEstimate: await aiService.estimateCost({
-        service: "plomberie",
-        urgency: "normal",
-        complexity: "moderate",
-      }),
-    }));
+  validateBody(analyzeImageSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { imageDataUrl, description, urgency } = req.body;
+
+    const analysis = await aiService.analyzeImage({ imageDataUrl, description });
+    const costEstimate = await aiService.estimateCost({
+      service: analysis.service,
+      urgency: urgency ?? analysis.urgency,
+      complexity: analysis.complexity,
+      description,
+    });
+
+    res.json(successResponse({ analysis, costEstimate }));
   })
 );
 

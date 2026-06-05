@@ -76,3 +76,55 @@ describe("matchTechnicians SLA priority", () => {
     expect(matches[0].matchScore).toBeGreaterThanOrEqual(0.9);
   });
 });
+
+describe("analyzeImage (photo → estimate, keyword fallback — no HF key in test env)", () => {
+  const tinyPng = "data:image/png;base64,iVBORw0KGgo=";
+
+  it("falls back to keyword analysis of the description and returns a valid shape", async () => {
+    const a = await aiService.analyzeImage({ imageDataUrl: tinyPng, description: "fuite d'eau sous le robinet" });
+    expect(a.service).toBe("plomberie");
+    expect(["low", "normal", "high", "emergency"]).toContain(a.urgency);
+    expect(a.confidence).toBeGreaterThan(0);
+    expect(a.language).toBe("fr");
+  });
+
+  it("still returns a usable analysis when no description is given", async () => {
+    const a = await aiService.analyzeImage({ imageDataUrl: tinyPng });
+    expect(a.service).toBeTruthy();
+    expect(a.subServices.length).toBeGreaterThan(0);
+  });
+});
+
+describe("parseVisionAnalysis (vision hallucination guard)", () => {
+  const fallback = {
+    service: "services_generaux", subServices: ["Réparation"], urgency: "normal",
+    complexity: "moderate" as const, estimatedDuration: "2-4 heures", confidence: 0.5,
+    extractedKeywords: ["x"], language: "fr" as const,
+  };
+  const parse = (content: string) =>
+    (aiService as unknown as { parseVisionAnalysis: (c: string, f: typeof fallback) => typeof fallback | null })
+      .parseVisionAnalysis(content, fallback);
+
+  it("accepts a valid analysis with a known service and enums", () => {
+    const r = parse('{"service":"electricite","subServices":["Tableau"],"urgency":"high","complexity":"complex","estimatedDuration":"3-5 heures","confidence":0.9,"observations":"tableau brûlé"}');
+    expect(r).not.toBeNull();
+    expect(r!.service).toBe("electricite");
+    expect(r!.urgency).toBe("high");
+    expect(r!.extractedKeywords[0]).toContain("brûlé");
+  });
+
+  it("snaps an unknown service back to the fallback", () => {
+    const r = parse('{"service":"teleportation","urgency":"normal","complexity":"simple","confidence":0.9}');
+    expect(r!.service).toBe("services_generaux");
+  });
+
+  it("snaps invalid enums back to the fallback", () => {
+    const r = parse('{"service":"plomberie","urgency":"super-urgent","complexity":"impossible","confidence":0.9}');
+    expect(r!.urgency).toBe("normal");
+    expect(r!.complexity).toBe("moderate");
+  });
+
+  it("returns null on malformed (non-JSON) content", () => {
+    expect(parse("désolé, je ne peux pas analyser cette image")).toBeNull();
+  });
+});

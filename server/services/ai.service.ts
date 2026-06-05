@@ -3,6 +3,13 @@ import { config } from "@/config/index.ts";
 import type { JobAnalysis, CostEstimate, TechnicianMatch, UpsellSuggestion } from "@/db/schema.ts";
 
 export class AIService {
+  // Services the platform supports. Used to constrain (and sanity-check) any
+  // service a model proposes from a photo. Mirrors the keys in analyzeJob.
+  private static readonly VALID_SERVICES = [
+    "plomberie", "electricite", "climatisation", "peinture", "menuiserie",
+    "carrelage", "metallerie", "etancheite", "portes_serrures", "services_generaux",
+  ];
+
   async analyzeJob(description: string): Promise<JobAnalysis> {
     logger.info("Analyzing job", { description: description.substring(0, 100) });
 
@@ -179,6 +186,139 @@ Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après, au fo
       confidence: Number.isFinite(confidence) && confidence > 0 && confidence <= 1 ? confidence : 0.8,
       breakdown: fallback.breakdown,
       explanation,
+    };
+  }
+
+  /**
+   * P0-2 — Photo → instant estimate. The client snaps the broken thing and gets
+   * a service classification *before* anyone visits, removing the "technician
+   * invents problems on site" arnaque. Uses Qwen2.5-VL (via HF) when configured;
+   * always falls back to the keyword analysis of the (optional) description so
+   * the route never breaks (no API key, timeout, malformed/hallucinated output).
+   */
+  async analyzeImage(params: { imageDataUrl: string; description?: string }): Promise<JobAnalysis> {
+    const fallback = await this.analyzeJob(params.description ?? "");
+
+    if (!config.HUGGINGFACE_API_KEY) {
+      return fallback;
+    }
+
+    try {
+      const vision = await this.analyzeImageWithLLM(params, fallback);
+      return vision ?? fallback;
+    } catch (error) {
+      logger.warn("Vision analysis failed, using keyword fallback", { error });
+      return fallback;
+    }
+  }
+
+  private async analyzeImageWithLLM(
+    params: { imageDataUrl: string; description?: string },
+    fallback: JobAnalysis
+  ): Promise<JobAnalysis | null> {
+    const services = AIService.VALID_SERVICES.join(", ");
+    const prompt = `Tu es un expert en diagnostic de bricolage et maintenance au Maroc. Observe la photo${
+      params.description ? ` et la description du client: "${params.description}"` : ""
+    } et identifie le type d'intervention nécessaire.
+
+Choisis le service parmi: ${services}.
+
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ou après, au format:
+{"service": "<un des services ci-dessus>", "subServices": ["<sous-tâche>"], "urgency": "<low|normal|high|emergency>", "complexity": "<simple|moderate|complex>", "estimatedDuration": "<ex: 2-3 heures>", "confidence": <0 à 1>, "observations": "<ce que tu vois sur la photo, en français>"}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const res = await fetch(
+        `https://api-inference.huggingface.co/models/${config.HF_VISION_MODEL}/v1/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.HUGGINGFACE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: config.HF_VISION_MODEL,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: prompt },
+                  { type: "image_url", image_url: { url: params.imageDataUrl } },
+                ],
+              },
+            ],
+            temperature: 0.2,
+            max_tokens: 400,
+            response_format: { type: "json_object" },
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      if (!res.ok) {
+        logger.warn("HF vision inference returned non-OK status", { status: res.status });
+        return null;
+      }
+
+      const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) return null;
+
+      return this.parseVisionAnalysis(content, fallback);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * Validate a vision-model job analysis. Vision models hallucinate more freely
+   * than text, so we reject anything outside the known enums and snap an
+   * unrecognized service back to the keyword fallback rather than trusting it.
+   */
+  private parseVisionAnalysis(content: string, fallback: JobAnalysis): JobAnalysis | null {
+    const match = content.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+
+    const urgencies = ["low", "normal", "high", "emergency"];
+    const complexities = ["simple", "moderate", "complex"];
+
+    const service = typeof parsed.service === "string" && AIService.VALID_SERVICES.includes(parsed.service)
+      ? parsed.service
+      : fallback.service;
+    const urgency = typeof parsed.urgency === "string" && urgencies.includes(parsed.urgency)
+      ? parsed.urgency
+      : fallback.urgency;
+    const complexity = typeof parsed.complexity === "string" && complexities.includes(parsed.complexity)
+      ? (parsed.complexity as JobAnalysis["complexity"])
+      : fallback.complexity;
+
+    const confidence = Number(parsed.confidence);
+    const subServices = Array.isArray(parsed.subServices)
+      ? parsed.subServices.filter((s): s is string => typeof s === "string").slice(0, 5)
+      : fallback.subServices;
+    const observations = typeof parsed.observations === "string" ? parsed.observations.trim() : "";
+
+    return {
+      service,
+      subServices: subServices.length ? subServices : fallback.subServices,
+      urgency,
+      complexity,
+      estimatedDuration: typeof parsed.estimatedDuration === "string" && parsed.estimatedDuration.trim()
+        ? parsed.estimatedDuration.trim()
+        : fallback.estimatedDuration,
+      confidence: Number.isFinite(confidence) && confidence > 0 && confidence <= 1 ? confidence : 0.7,
+      // Surface what the model saw as keywords so the rest of the flow is unchanged.
+      extractedKeywords: observations ? [observations] : fallback.extractedKeywords,
+      language: "fr",
     };
   }
 
