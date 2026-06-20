@@ -128,7 +128,7 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
   };
 
   // Step 1: validate details, then advance to the review/confirm step.
-  const handleContinue = (e: React.FormEvent) => {
+  const handleContinue = (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
 
     // Check if user is authenticated before booking
@@ -333,8 +333,9 @@ export function BookingModal({ isOpen = true, onClose, match, technician: standa
               {t("common.cancel")}
             </Button>
             <Button
-              type="submit"
+              type="button"
               className="flex-1"
+              onClick={handleContinue}
               data-testid="button-continue-booking"
             >
               Continuer

@@ -2,9 +2,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
-import { Star, MapPin, Shield } from "lucide-react";
+import { Star, MapPin } from "lucide-react";
 import { Link } from "wouter";
 import { TrustBadge, getTrustTier } from "./TrustBadge";
+import { VerificationBadge, deriveLadderFromTechnician } from "./VerificationBadge";
 import { ServiceAvatar } from "@/components/design/ServiceAvatar";
 import type { TechnicianWithUser } from "@shared/schema";
 
@@ -53,10 +54,8 @@ export function TechnicianCard({ technician, onBook }: TechnicianCardProps) {
         </div>
         {technician.isVerified && (
           <div className="absolute bottom-2 left-2">
-            <Badge className="bg-blue-500/90 text-white border-0 px-2 py-0.5 text-xs font-semibold flex items-center gap-1 backdrop-blur">
-              <Shield className="w-3 h-3" />
-              Vérifié
-            </Badge>
+            {/* P0-4: tiered ladder + "what's verified" checklist, not a binary badge. */}
+            <VerificationBadge verification={deriveLadderFromTechnician(technician)} compact />
           </div>
         )}
       </div>

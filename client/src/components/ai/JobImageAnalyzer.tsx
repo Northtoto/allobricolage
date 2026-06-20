@@ -35,6 +35,17 @@ export function JobImageAnalyzer() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Match the backend's accepted formats (jpeg/png/webp) so we fail with a
+        // friendly message instead of a server 422.
+        if (!/^image\/(jpeg|jpg|png|webp)$/.test(file.type)) {
+            toast({
+                title: "Format non supporté",
+                description: "Utilisez une image JPEG, PNG ou WebP.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         if (file.size > 5 * 1024 * 1024) {
             toast({
                 title: "Image trop lourde",
@@ -57,20 +68,28 @@ export function JobImageAnalyzer() {
 
         setIsAnalyzing(true);
         try {
+            // Backend (POST /api/jobs/analyze-image) expects `imageDataUrl` and
+            // returns the standard { success, data } envelope — unwrap it.
             const response = await apiRequest("POST", "/api/jobs/analyze-image", {
-                imageData: image,
-                city: "Casablanca", // Default for quick analysis
-                description: "Analyse rapide par image"
+                imageDataUrl: image,
             });
 
-            const data = await response.json();
-            setResult(data);
+            if (!response.ok) {
+                toast({
+                    title: "Erreur",
+                    description: "Impossible d'analyser l'image. Réessayez.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            const body = await response.json();
+            setResult(body.data ?? body);
             toast({
                 title: "Analyse terminée !",
                 description: "Notre IA a identifié votre problème.",
             });
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast({
                 title: "Erreur",
                 description: "Impossible d'analyser l'image. Réessayez.",

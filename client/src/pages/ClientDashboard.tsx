@@ -12,6 +12,7 @@ import { Calendar, Clock, MapPin, Download, Star, User, Settings, FileText, Load
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { WarrantyClaimButton } from "@/components/booking/WarrantyClaimButton";
 
 interface Booking {
   id: string;
@@ -401,7 +402,7 @@ function BookingCard({ booking, isActive }: { booking: any, isActive?: boolean }
               ) : (
                 <>
                   {booking.status === "completed" && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Link href={`/payment/${booking.id}`}>
                         <Button size="sm">
                           Régler / Facture
@@ -410,6 +411,7 @@ function BookingCard({ booking, isActive }: { booking: any, isActive?: boolean }
                       <Button variant="outline" size="sm">
                         Laisser un avis
                       </Button>
+                      <WarrantyClaimButton bookingId={booking.id} />
                     </div>
                   )}
                 </>

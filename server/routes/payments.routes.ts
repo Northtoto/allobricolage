@@ -279,6 +279,9 @@ router.get(
       amount: payment.amount,
       escrowStatus: payment.escrowStatus,
       status: payment.status,
+      // P1-6: lets the technician UI decide whether to show "Cash collecté".
+      paymentMethod: payment.paymentMethod,
+      bankReference: payment.bankReference,
       createdAt: payment.createdAt,
     }));
   })

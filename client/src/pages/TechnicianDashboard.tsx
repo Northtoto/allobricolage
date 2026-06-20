@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { CashCollectedButton } from "@/components/booking/CashCollectedButton";
 import { apiRequest } from "@/lib/queryClient";
 import { Calendar, Clock, MapPin, DollarSign, CheckCircle, XCircle, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -217,6 +218,10 @@ export default function TechnicianDashboard() {
                           <div>
                             <p className="font-medium">{job.service}</p>
                             <p className="text-sm text-muted-foreground">{new Date(job.scheduledDate).toLocaleDateString()}</p>
+                            {/* P1-6: confirm cash/CashPlus collection (renders only when relevant). */}
+                            <div className="mt-2">
+                              <CashCollectedButton bookingId={job.id} />
+                            </div>
                           </div>
                           <div className="text-right">
                             <p className="font-bold">{job.estimatedCost} MAD</p>
