@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { I18nProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OrganizationSchema, LocalBusinessSchema, WebsiteSearchSchema } from "@/components/seo/StructuredData";
 import { Loader2 } from "lucide-react";
@@ -42,22 +43,58 @@ function Router() {
     <Suspense fallback={<PageLoader />}>
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/post-job" component={PostJob} />
+        <Route path="/post-job">
+          {() => (
+            <AuthGuard>
+              <PostJob />
+            </AuthGuard>
+          )}
+        </Route>
         <Route path="/technician-dashboard" component={TechnicianDashboard} />
         <Route path="/client-dashboard" component={ClientDashboard} />
         <Route path="/technicians" component={TechnicianDirectory} />
         <Route path="/technician/:id" component={TechnicianProfile} />
-        <Route path="/payment/:bookingId" component={PaymentPage} />
-        <Route path="/track/:bookingId" component={TrackTechnician} />
-        <Route path="/technician/track/:bookingId" component={TechnicianJobTracking} />
+        <Route path="/payment/:bookingId">
+          {() => (
+            <AuthGuard>
+              <PaymentPage />
+            </AuthGuard>
+          )}
+        </Route>
+        <Route path="/track/:bookingId">
+          {() => (
+            <AuthGuard>
+              <TrackTechnician />
+            </AuthGuard>
+          )}
+        </Route>
+        <Route path="/technician/track/:bookingId">
+          {() => (
+            <AuthGuard>
+              <TechnicianJobTracking />
+            </AuthGuard>
+          )}
+        </Route>
         <Route path="/login" component={Login} />
         <Route path="/connexion" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/inscription" component={Signup} />
         <Route path="/signup/client" component={ClientSignup} />
         <Route path="/signup/technician" component={TechnicianSignup} />
-        <Route path="/admin" component={AdminDashboard} />
-        <Route path="/subscription" component={SubscriptionPage} />
+        <Route path="/admin">
+          {() => (
+            <AuthGuard requireRole="admin">
+              <AdminDashboard />
+            </AuthGuard>
+          )}
+        </Route>
+        <Route path="/subscription">
+          {() => (
+            <AuthGuard>
+              <SubscriptionPage />
+            </AuthGuard>
+          )}
+        </Route>
         <Route path="/entreprises" component={BusinessLanding} />
         <Route path="/business" component={BusinessLanding} />
         <Route component={NotFound} />

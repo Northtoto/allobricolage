@@ -45,8 +45,11 @@ export function checkPasswordStrength(password: string): PasswordStrengthResult 
   }
 
   return {
+    // Must match the server's password policy exactly (server/utils/password-policy.ts
+    // passwordSchema requires all of these) — a looser client-side gate lets a user
+    // pass validation here and still get rejected at signup.
     score,
-    isValid: score >= 3 && hasMinLength,
+    isValid: hasMinLength && hasUpper && hasLower && hasDigit && hasSpecial,
     requirements,
   };
 }

@@ -3,7 +3,7 @@ import { authenticate } from "@/middleware/auth.ts";
 import { validateParams, validateQuery } from "@/middleware/validate-request.ts";
 import { asyncHandler } from "@/middleware/error-handler.ts";
 import { successResponse } from "@/utils/response.ts";
-import { NotFoundError } from "@/utils/errors.ts";
+import { NotFoundError, ForbiddenError } from "@/utils/errors.ts";
 import { technicianRepository, type TechnicianFilters } from "@/repositories/technician.repository.ts";
 import { reviewRepository } from "@/repositories/review.repository.ts";
 import type { AuthenticatedRequest } from "@/types/express.ts";
@@ -125,6 +125,18 @@ router.post(
   "/:id/photo",
   authenticate,
   asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as AuthenticatedRequest).user!;
+
+    // Only the technician who owns this profile (or an admin) may replace its
+    // photo — without this check any authenticated user could deface any
+    // technician's profile just by knowing/guessing their id.
+    if (user.role !== "admin") {
+      const owned = await technicianRepository.findByUserId(user.id);
+      if (!owned || owned.id !== req.params.id) {
+        throw new ForbiddenError("Vous ne pouvez pas modifier ce profil");
+      }
+    }
+
     const photoUrl = `https://ui-avatars.com/api/?name=Tech&background=random`;
     await technicianRepository.update(req.params.id, { photo: photoUrl });
     res.json(successResponse({ photo: photoUrl }));

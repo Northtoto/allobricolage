@@ -25,20 +25,8 @@ import {
   ArrowLeft,
   Sparkles
 } from "lucide-react";
+import { MOROCCAN_CITIES } from "@shared/schema";
 import type { JobAnalysis, CostEstimate, TechnicianMatch, UpsellSuggestion, Job } from "@shared/schema";
-
-const MOROCCAN_CITIES = [
-  "Casablanca",
-  "Rabat",
-  "Marrakech",
-  "Fès",
-  "Tanger",
-  "Agadir",
-  "Meknès",
-  "Oujda",
-  "Kenitra",
-  "Tétouan",
-];
 
 export default function PostJob() {
   const { t } = useI18n();

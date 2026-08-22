@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -19,6 +19,20 @@ export function AuthGuard({
   const [, setLocation] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
 
+  const deniedByAuth = !isLoading && requireAuth && !isAuthenticated;
+  const deniedByRole = !isLoading && !deniedByAuth && !!requireRole && !!user && user.role !== requireRole;
+
+  // Navigate from an effect, not during render — calling wouter's setLocation
+  // synchronously in the render body updates another component (the router)
+  // while this one is still rendering.
+  useEffect(() => {
+    if (deniedByAuth) {
+      setLocation(redirectTo);
+    } else if (deniedByRole) {
+      setLocation("/");
+    }
+  }, [deniedByAuth, deniedByRole, redirectTo, setLocation]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -27,13 +41,11 @@ export function AuthGuard({
     );
   }
 
-  if (requireAuth && !isAuthenticated) {
-    setLocation(redirectTo);
+  if (deniedByAuth) {
     return null;
   }
 
-  if (requireRole && user && user.role !== requireRole) {
-    setLocation("/");
+  if (deniedByRole) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

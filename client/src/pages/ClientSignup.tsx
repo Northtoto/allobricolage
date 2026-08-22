@@ -61,7 +61,13 @@ export default function ClientSignup() {
       toast({ title: "Bienvenue!", description: "Votre compte client a été créé avec succès" });
       setLocation("/");
     } catch (error) {
-      toast({ title: "Erreur", description: "Cet utilisateur existe déjà", variant: "destructive" });
+      // Use the backend's own message (duplicate username/email, weak password, …)
+      // rather than a hardcoded guess — the api-client's generic mapper isn't used
+      // here because its UNAUTHORIZED case ("session expired") doesn't fit signup.
+      const description = error instanceof Error && error.message
+        ? error.message
+        : "Impossible de créer le compte. Veuillez réessayer.";
+      toast({ title: "Erreur", description, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

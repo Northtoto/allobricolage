@@ -48,7 +48,8 @@ router.get(
       rib: "007810000123456789012349",
       swift: "BCPCMAMC",
       reference,
-      recipient: "M3allem SARL",
+      // "companyName" — kept in sync with the field name PaymentPage.tsx reads.
+      companyName: "M3allem SARL",
     }));
   })
 );

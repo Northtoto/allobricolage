@@ -63,7 +63,7 @@ export class PaymentService {
     return `CP-${uuidv4().substring(0, 8).toUpperCase()}`;
   }
 
-  async processPayment(data: InsertPayment & { paymentMethodDetails?: Record<string, unknown> }): Promise<{ paymentId: string; transactionId: string; status: string }> {
+  async processPayment(data: InsertPayment & { paymentMethodDetails?: Record<string, unknown> }): Promise<{ paymentId: string; transactionId: string; status: string; bankReference: string | null }> {
     const transactionId = `TRX-${uuidv4().substring(0, 8).toUpperCase()}`;
 
     const split = await this.resolveCommission(data.bookingId, data.amount);
@@ -93,6 +93,10 @@ export class PaymentService {
       paymentId: payment.id,
       transactionId,
       status: payment.status,
+      // Callers (e.g. PaymentPage) need this to show the client the SAME CashPlus/
+      // bank-transfer reference the technician/admin will later reconcile against
+      // (payment.bankReference) — the transactionId is a different, internal code.
+      bankReference: payment.bankReference ?? null,
     };
   }
 

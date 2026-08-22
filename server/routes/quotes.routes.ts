@@ -110,6 +110,20 @@ router.get(
   authenticate,
   validateParams(idParam),
   asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as AuthenticatedRequest).user!;
+    const booking = await bookingRepository.findById(req.params.id);
+    if (!booking) throw new NotFoundError("Booking", req.params.id);
+
+    const tech = user.role !== "admin" ? await technicianRepository.findByUserId(user.id) : undefined;
+    const isAuthorized =
+      user.role === "admin" ||
+      booking.clientId === user.id ||
+      tech?.id === booking.technicianId;
+
+    if (!isAuthorized) {
+      throw new ForbiddenError("Vous ne pouvez pas accéder aux devis de cette réservation.");
+    }
+
     const quotesList = await quoteRepository.findByBookingId(req.params.id);
     res.json(successResponse(quotesList));
   })

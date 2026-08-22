@@ -104,10 +104,23 @@ router.patch(
   validateParams(idParamSchema),
   validateBody(reviewResponseSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const review = await reviewRepository.update(req.params.id, {
+    const user = (req as AuthenticatedRequest).user!;
+    const review = await reviewRepository.findById(req.params.id);
+    if (!review) {
+      throw new NotFoundError("Review", req.params.id);
+    }
+
+    if (user.role !== "admin") {
+      const tech = await technicianRepository.findByUserId(user.id);
+      if (!tech || tech.id !== review.technicianId) {
+        throw new ForbiddenError("Vous ne pouvez répondre qu'aux avis vous concernant.");
+      }
+    }
+
+    const updated = await reviewRepository.update(req.params.id, {
       technicianResponse: req.body.response,
     });
-    res.json(successResponse(review));
+    res.json(successResponse(updated));
   })
 );
 

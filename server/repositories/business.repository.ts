@@ -8,6 +8,7 @@ import {
   type BusinessRetainer,
   type InsertBusinessRetainer,
 } from "@/db/schema.ts";
+import { NotFoundError } from "@/utils/errors.ts";
 import { v4 as uuidv4 } from "uuid";
 
 export class BusinessRepository {
@@ -41,6 +42,10 @@ export class BusinessRepository {
       .set(data)
       .where(eq(businessProfiles.id, id))
       .returning();
+
+    if (!rows[0]) {
+      throw new NotFoundError("BusinessProfile", id);
+    }
     return rows[0];
   }
 

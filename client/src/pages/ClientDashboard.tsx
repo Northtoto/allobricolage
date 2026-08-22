@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { WarrantyClaimButton } from "@/components/booking/WarrantyClaimButton";
+import { QuoteReviewCard } from "@/components/booking/QuoteReviewCard";
 
 interface Booking {
   id: string;
@@ -399,24 +400,30 @@ function BookingCard({ booking, isActive }: { booking: any, isActive?: boolean }
                     <span className="text-sm text-muted-foreground italic">En attente de confirmation...</span>
                   )}
                 </>
-              ) : (
-                <>
-                  {booking.status === "completed" && (
-                    <div className="flex flex-wrap gap-2">
-                      <Link href={`/payment/${booking.id}`}>
-                        <Button size="sm">
-                          Régler / Facture
-                        </Button>
-                      </Link>
-                      <Button variant="outline" size="sm">
-                        Laisser un avis
-                      </Button>
-                      <WarrantyClaimButton bookingId={booking.id} />
-                    </div>
-                  )}
-                </>
-              )}
+              ) : null}
             </div>
+
+            {/* Written-devis step: shows any pending quote so the client can
+                validate the price before work starts (locks booking.estimatedCost). */}
+            {isActive && <QuoteReviewCard bookingId={booking.id} />}
+
+            {!isActive && (
+              <>
+                {booking.status === "completed" && (
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/payment/${booking.id}`}>
+                      <Button size="sm">
+                        Régler / Facture
+                      </Button>
+                    </Link>
+                    <Button variant="outline" size="sm">
+                      Laisser un avis
+                    </Button>
+                    <WarrantyClaimButton bookingId={booking.id} />
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </CardContent>

@@ -38,8 +38,15 @@ export default function Login() {
       } else {
         setLocation("/");
       }
-    } catch {
-      toast({ title: "Erreur", description: "Identifiants invalides", variant: "destructive" });
+    } catch (error) {
+      // Use the backend's own message directly (not the generic api-client mapper —
+      // its UNAUTHORIZED case says "session expired", which is wrong here: this is a
+      // login attempt, and the backend already crafts a safe, specific message for
+      // wrong credentials / remaining attempts / lockout duration).
+      const description = error instanceof Error && error.message
+        ? error.message
+        : "Identifiants invalides";
+      toast({ title: "Erreur", description, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

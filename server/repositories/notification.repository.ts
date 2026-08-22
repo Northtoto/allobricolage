@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { db } from "@/db/index.ts";
 import { notifications, type Notification, type InsertNotification } from "@/db/schema.ts";
 import { NotFoundError } from "@/utils/errors.ts";
@@ -13,7 +13,7 @@ export class NotificationRepository {
 
   async findUnreadByUserId(userId: string): Promise<Notification[]> {
     return db.select().from(notifications)
-      .where(eq(notifications.userId, userId))
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)))
       .orderBy(desc(notifications.createdAt));
   }
 

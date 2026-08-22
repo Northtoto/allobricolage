@@ -1,5 +1,16 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { get } from "./api-client";
+import { get, ApiRequestError } from "./api-client";
+
+// True for a 401 from either error path used in this file: ApiRequestError (thrown
+// by get(), which carries the real statusCode) and the plain `${status}: ${text}`
+// Error thrown by apiRequest() below (string-matching status here, not error.message,
+// since the backend's message text has no reason to contain "401").
+function isUnauthorizedError(error: unknown): boolean {
+  if (error instanceof ApiRequestError) {
+    return error.statusCode === 401;
+  }
+  return error instanceof Error && /^401:/.test(error.message);
+}
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -71,11 +82,7 @@ export function getQueryFn<T>(options: {
     try {
       return await get<T>(path);
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message.includes("401") &&
-        unauthorizedBehavior === "returnNull"
-      ) {
+      if (isUnauthorizedError(error) && unauthorizedBehavior === "returnNull") {
         return null as T;
       }
       throw error;
@@ -91,7 +98,7 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60 * 5,
       retry: (failureCount, error) => {
-        if (error instanceof Error && error.message.includes("401")) {
+        if (isUnauthorizedError(error)) {
           return false;
         }
         return failureCount < 2;

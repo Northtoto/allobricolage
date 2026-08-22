@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CashCollectedButton } from "@/components/booking/CashCollectedButton";
+import { SubmitQuoteDialog } from "@/components/booking/SubmitQuoteDialog";
 import { apiRequest } from "@/lib/queryClient";
 import { Calendar, Clock, MapPin, DollarSign, CheckCircle, XCircle, User, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -197,6 +198,8 @@ export default function TechnicianDashboard() {
                         <MapPin className="h-4 w-4 mr-2" />
                         Aller au chantier
                       </Button>
+                      {/* Written-devis step: locks the price the client will pay. */}
+                      <SubmitQuoteDialog bookingId={job.id} />
                     </div>
                   </CardContent>
                 </Card>

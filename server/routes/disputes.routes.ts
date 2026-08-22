@@ -238,6 +238,10 @@ router.post(
       .where(eq(disputes.id, id))
       .returning();
 
+    if (!updated) {
+      throw new NotFoundError("Dispute", id);
+    }
+
     // Release escrow refund if specified
     if (refundAmount && refundAmount > 0) {
       await db

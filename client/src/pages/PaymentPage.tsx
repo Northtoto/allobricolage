@@ -44,13 +44,41 @@ interface BankDetails {
   companyName?: string;
   bankName?: string;
   rib?: string;
-  iban?: string;
-  amount?: number;
+  accountNumber?: string;
+  swift?: string;
 }
 
 interface PaymentData {
   status?: string;
   amount?: number;
+}
+
+interface CreatePaymentResult {
+  paymentId?: string;
+  transactionId?: string;
+  status?: string;
+  bankReference?: string | null;
+}
+
+// lib/queryClient's apiRequest() throws a plain `Error("<status>: <body>")` on a
+// non-2xx response (unlike lib/api-client's typed ApiRequestError), so
+// getErrorMessage() alone would surface the raw JSON error envelope to the user.
+// Unwrap the server's real message here before falling back to getErrorMessage.
+function extractApiErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    const match = error.message.match(/^\d+:\s*(\{.*\})$/s);
+    if (match) {
+      try {
+        const body = JSON.parse(match[1]) as { error?: { message?: string } };
+        if (body?.error?.message) {
+          return body.error.message;
+        }
+      } catch {
+        // Not JSON — fall through to the generic handling below.
+      }
+    }
+  }
+  return getErrorMessage(error);
 }
 
 export default function PaymentPage() {
@@ -125,7 +153,7 @@ export default function PaymentPage() {
         paymentMethod,
         currency: "MAD",
       });
-      const result = await response.json(); // { paymentId, transactionId, status }
+      const result: CreatePaymentResult = await response.json();
 
       if (paymentMethod === "cash") {
         toast({
@@ -133,12 +161,20 @@ export default function PaymentPage() {
           description: "Réglez le technicien en espèces une fois le travail terminé. Rien à payer maintenant.",
         });
       } else if (paymentMethod === "bank_transfer") {
+        // Keep the reference shown in sync with the one actually stored on the
+        // payment record — that's what reconciliation matches against.
+        if (result.bankReference) {
+          setBankReference(result.bankReference);
+        }
         toast({
           title: "Instructions de virement",
           description: "Effectuez le virement avec la référence fournie ci-dessous.",
         });
       } else if (paymentMethod === "cashplus") {
-        setCashPlusReference(result.transactionId ?? "");
+        // bankReference is the actual CP-xxxxxxxx code the technician/admin will
+        // reconcile against (see CashCollectedButton) — transactionId is a
+        // different, internal id and must not be shown as the CashPlus reference.
+        setCashPlusReference(result.bankReference ?? result.transactionId ?? "");
         toast({
           title: "Demande Cash Plus enregistrée",
           description: "Présentez la référence dans n'importe quel point Cash Plus.",
@@ -152,7 +188,7 @@ export default function PaymentPage() {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: getErrorMessage(error),
+        description: extractApiErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -195,6 +231,7 @@ export default function PaymentPage() {
   const isPaid = payment?.status === "completed";
   const isCompleted = booking.status === "completed";
   const amount = booking.estimatedCost || 0;
+  const hasAmount = amount > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -237,6 +274,12 @@ export default function PaymentPage() {
                         <Download className="h-4 w-4" />
                         Télécharger la facture
                       </Button>
+                    </div>
+                  ) : isCompleted && !hasAmount ? (
+                    <div className="text-center py-8 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-yellow-800">
+                        ⏳ Le montant n'est pas encore défini. Le technicien doit d'abord envoyer un devis avant que le paiement soit disponible.
+                      </p>
                     </div>
                   ) : isCompleted ? (
                     <>
@@ -352,7 +395,7 @@ export default function PaymentPage() {
                           <div className="flex items-center gap-2">
                             <Building2 className="h-5 w-5 text-gray-600" />
                             <Label htmlFor="bank_transfer" className="text-base font-semibold cursor-pointer">
-                              Virement bancaire (RIB/IBAN)
+                              Virement bancaire (RIB)
                             </Label>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
@@ -381,19 +424,12 @@ export default function PaymentPage() {
                                   </Button>
                                 </div>
                               </div>
-                              <div>
-                                <p className="text-xs text-gray-500">IBAN</p>
-                                <div className="flex items-center gap-2">
-                                  <code className="font-mono text-sm">{bankDetails.iban}</code>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleCopyToClipboard(bankDetails.iban || "")}
-                                  >
-                                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                  </Button>
+                              {bankDetails.swift && (
+                                <div>
+                                  <p className="text-xs text-gray-500">Code SWIFT</p>
+                                  <code className="font-mono text-sm">{bankDetails.swift}</code>
                                 </div>
-                              </div>
+                              )}
                               <div className="pt-2 border-t">
                                 <p className="text-xs text-gray-500">Référence à mentionner</p>
                                 <div className="flex items-center gap-2">
@@ -424,7 +460,7 @@ export default function PaymentPage() {
                     </div>
                   )}
 
-                  {!isPaid && isCompleted && (
+                  {!isPaid && isCompleted && hasAmount && (
                     <>
                       <Separator />
                       <div className="flex items-center gap-3 text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
@@ -485,13 +521,13 @@ export default function PaymentPage() {
 
                   <div>
                     <p className="text-sm text-gray-600">Montant du service</p>
-                    <p className="text-lg font-semibold">{amount} MAD</p>
+                    <p className="text-lg font-semibold">{hasAmount ? `${amount} MAD` : "Devis en attente"}</p>
                   </div>
 
                   <div className="pt-4 border-t-2">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold">Total à payer</span>
-                      <span className="text-2xl font-bold text-blue-600">{amount} MAD</span>
+                      <span className="text-2xl font-bold text-blue-600">{hasAmount ? `${amount} MAD` : "—"}</span>
                     </div>
                   </div>
 
